@@ -1,88 +1,92 @@
+import React from 'react';
 import Badge from '../../ui/Badge';
 
-export default function AppointmentStatus({ status, showLabel = true }) {
-  const getStatusInfo = (status) => {
-    const statusMap = {
-      confirmed: {
-        label: 'Confirmed',
-        variant: 'success',
-        description: 'Your appointment has been confirmed',
+const AppointmentStatus = ({ status }) => {
+  // Configuración de estilos según el estado
+  const statusConfig = {
+    'SCHEDULED': {
+      label: 'Programada',
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-800',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-        ),
+      )
       },
-      pending: {
-        label: 'Pending',
-        variant: 'warning',
-        description: 'Your appointment is pending confirmation',
+    'CONFIRMED': {
+      label: 'Confirmada',
+      bgColor: 'bg-emerald-100',
+      textColor: 'text-emerald-800',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
           </svg>
-        ),
+      )
       },
-      cancelled: {
-        label: 'Cancelled',
-        variant: 'danger',
-        description: 'Your appointment has been cancelled',
+    'IN_CONSULTATION': {
+      label: 'En consulta',
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-800',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-        ),
+      )
       },
-      completed: {
-        label: 'Completed',
-        variant: 'primary',
-        description: 'Your appointment has been completed',
+    'COMPLETED': {
+      label: 'Completada',
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-800',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-        ),
+      )
       },
-      rescheduled: {
-        label: 'Rescheduled',
-        variant: 'warning',
-        description: 'Your appointment has been rescheduled',
+    'CANCELLED': {
+      label: 'Cancelada',
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-800',
         icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-        ),
-      },
-    };
-
-    return statusMap[status] || {
-      label: status,
-      variant: 'primary',
-      description: 'Appointment status',
-      icon: null,
-    };
+      )
+    },
+    'NO_SHOW': {
+      label: 'No asistió',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-800',
+      icon: (
+        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    }
   };
 
-  const statusInfo = getStatusInfo(status);
+  // Configuración por defecto si no se encuentra el estado
+  const defaultConfig = {
+    label: status || 'Desconocido',
+    bgColor: 'bg-gray-100',
+    textColor: 'text-gray-800',
+    icon: (
+      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    )
+  };
 
-  if (!showLabel) {
-    return <Badge text={statusInfo.label} variant={statusInfo.variant} />;
-  }
+  // Obtener la configuración según el estado o usar la configuración por defecto
+  const config = statusConfig[status] || defaultConfig;
 
   return (
-    <div className="flex items-center">
-      <div className={`p-2 rounded-full mr-3 ${
-        statusInfo.variant === 'success' ? 'bg-green-100 text-green-600' :
-        statusInfo.variant === 'warning' ? 'bg-yellow-100 text-yellow-600' :
-        statusInfo.variant === 'danger' ? 'bg-red-100 text-red-600' :
-        'bg-blue-100 text-blue-600'
-      }`}>
-        {statusInfo.icon}
-      </div>
-      <div>
-        <Badge text={statusInfo.label} variant={statusInfo.variant} />
-        <p className="text-sm text-gray-600 mt-1">{statusInfo.description}</p>
-      </div>
+    <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor}`}>
+      {config.icon}
+      {config.label}
     </div>
   );
-} 
+};
+
+export default AppointmentStatus; 

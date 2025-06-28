@@ -1,18 +1,18 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Navbar from './Navbar';
-import Footer from './Footer';
+import LandingNavbar from './LandingNavbar';
+import LandingFooter from './LandingFooter';
 
-const PublicLayout = () => {
+const LandingLayout = () => {
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <LandingNavbar />
       <main className="flex-grow">
         <Outlet />
       </main>
-      <Footer />
+      <LandingFooter />
     </div>
   );
 };
 
-export default PublicLayout; 
+export default LandingLayout; 

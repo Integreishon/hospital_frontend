@@ -9,7 +9,14 @@ const handleResponse = async (response) => {
     let errorMessage;
     try {
       const errorData = await response.json();
-      errorMessage = errorData.message || `Error: ${response.status}`;
+      // Handle ApiResponse error structure
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      } else if (errorData.error) {
+        errorMessage = errorData.error;
+      } else {
+        errorMessage = `Error: ${response.status}`;
+      }
     } catch (e) {
       errorMessage = `Error: ${response.status}`;
     }
@@ -18,11 +25,21 @@ const handleResponse = async (response) => {
   
   // Check if response is empty
   const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    return await response.json();
+  if (!contentType || !contentType.includes('application/json')) {
+    return null;
   }
   
-  return await response.text();
+  const jsonResponse = await response.json();
+  
+  // Handle ApiResponse structure
+  if (jsonResponse.hasOwnProperty('success') && jsonResponse.hasOwnProperty('data')) {
+    if (!jsonResponse.success) {
+      throw new Error(jsonResponse.message || 'Error en la respuesta del servidor');
+    }
+    return jsonResponse;
+  }
+  
+  return { success: true, data: jsonResponse };
 };
 
 // Create request headers with authentication token if available

@@ -1,67 +1,92 @@
-import { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
+import { authService } from '../services/authService';
+import api from '../services/api';
 
-export const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   useEffect(() => {
-    // Check for saved token in localStorage
+    const validateToken = async () => {
     const token = localStorage.getItem('token');
     if (token) {
-      // In a real app, you would validate the token with your API
-      // For now, we'll just set a mock user
-      setUser({
-        id: '123',
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        role: 'patient',
-      });
-    }
-    setLoading(false);
+        try {
+          // The backend has a /auth/validate endpoint
+          const response = await api.get('/auth/validate');
+          if (response.data.valid) {
+            setUser(response.data.user);
+          } else {
+            authService.logout();
+          }
+        } catch (err) {
+          authService.logout();
+        }
+      }
+      setIsLoading(false);
+    };
+
+    validateToken();
   }, []);
 
-  const login = async (email, password) => {
-    // In a real app, this would be an API call
-    // For now, just simulate a successful login
-    const mockUser = {
-      id: '123',
-      name: 'John Doe',
-      email,
-      role: 'patient',
-    };
-    
-    const mockToken = 'mock-jwt-token';
-    localStorage.setItem('token', mockToken);
-    setUser(mockUser);
-    return mockUser;
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
+  const login = async (username, password) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const userData = await authService.login(username, password);
+      setUser({
+        id: userData.userId,
+        email: userData.email,
+        role: userData.role,
+      });
+      return true;
+    } catch (err) {
+      setError(err.message || 'Failed to login');
+      throw err; // Re-throw to allow component to handle the error
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (userData) => {
-    // In a real app, this would be an API call
-    // For now, just simulate a successful registration
-    const mockUser = {
-      id: '123',
-      name: `${userData.firstName} ${userData.lastName}`,
-      email: userData.email,
-      role: 'patient',
-    };
-    
-    const mockToken = 'mock-jwt-token';
-    localStorage.setItem('token', mockToken);
-    setUser(mockUser);
-    return mockUser;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await authService.register(userData);
+      setUser({
+        id: response.userId,
+        email: response.email,
+        role: response.role,
+      });
+      return true;
+    } catch (err) {
+      setError(err.message || 'Failed to register');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = () => {
+    authService.logout();
+    setUser(null);
+  };
+
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    error,
+    login,
+    logout,
+    register,
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-} 
+}; 

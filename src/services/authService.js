@@ -1,18 +1,53 @@
 import api from './api';
 
-const authService = {
-  // Login user
-  async login(email, password) {
+/**
+ * Service functions for authentication.
+ */
+export const authService = {
+  /**
+   * Logs in a user.
+   * @param {string} username - The user's username (DNI or email).
+   * @param {string} password - The user's password.
+   * @returns {Promise<object>} The server response, typically includes a token and user data.
+   */
+  async login(username, password) {
     try {
-      const response = await api.post('/auth/login', { email, password });
-      if (response.token) {
-        localStorage.setItem('token', response.token);
+      const response = await api.post('/auth/login', { username, password });
+      // The response from the backend is wrapped in a generic ApiResponse
+      // The actual data (AuthResponse) is in the `data` property.
+      if (response && response.data) {
+        // Store the token in localStorage
+        localStorage.setItem('token', response.data.token);
+        return response.data;
       }
-      return response;
+      throw new Error(response.message || 'Login failed');
     } catch (error) {
-      console.error('Login error:', error);
+      // The api helper throws an error with the message from the backend on non-ok responses
+      console.error('Login failed:', error);
       throw error;
     }
+  },
+
+  /**
+   * Logs out the current user.
+   */
+  logout() {
+    // Simply remove the token from localStorage
+    localStorage.removeItem('token');
+  },
+
+  /**
+   * Gets the currently authenticated user from localStorage.
+   * This is a placeholder and should be replaced with a call to a /profile or /me endpoint.
+   */
+  getCurrentUser() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return null;
+    }
+    // In a real app, you would decode the token to get user info or call an endpoint
+    // For now, we just know a token exists. The AuthContext will hold the full user object.
+    return { token };
   },
 
   // Register new user
@@ -26,21 +61,6 @@ const authService = {
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
-    }
-  },
-
-  // Logout user
-  logout() {
-    localStorage.removeItem('token');
-  },
-
-  // Get current user
-  async getCurrentUser() {
-    try {
-      return await api.get('/auth/me');
-    } catch (error) {
-      console.error('Get current user error:', error);
-      return null;
     }
   },
 

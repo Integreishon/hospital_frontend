@@ -1,68 +1,75 @@
-import Card from '../../ui/Card';
-import Badge from '../../ui/Badge';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import Spinner from '../../ui/Spinner';
+import Button from '../../ui/Button';
 
-export default function UpcomingAppointments() {
-  // This would come from an API in a real application
-  const appointments = [
-    {
-      id: 1,
-      doctorName: 'Dr. Sarah Johnson',
-      specialty: 'Cardiology',
-      date: '2023-06-15',
-      time: '10:00 AM',
-      status: 'confirmed',
-    },
-    {
-      id: 2,
-      doctorName: 'Dr. Michael Chen',
-      specialty: 'Dermatology',
-      date: '2023-06-20',
-      time: '2:30 PM',
-      status: 'pending',
-    },
-  ];
+const UpcomingAppointments = () => {
+  const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState([]);
 
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      confirmed: { text: 'Confirmed', variant: 'success' },
-      pending: { text: 'Pending', variant: 'warning' },
-      cancelled: { text: 'Cancelled', variant: 'danger' },
-    };
-    
-    return <Badge text={statusMap[status].text} variant={statusMap[status].variant} />;
-  };
+  useEffect(() => {
+    // Simulate fetching data
+    setTimeout(() => {
+      setAppointments([
+        { id: 1, doctor: 'Dr. Ana García', specialty: 'Medicina General', date: '2025-07-02', time: '10:30' },
+        { id: 2, doctor: 'Dr. Carlos Mendoza', specialty: 'Cardiología', date: '2025-07-15', time: '15:00' },
+      ]);
+      setLoading(false);
+    }, 1500);
+  }, []);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-40">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
-    <Card title="Upcoming Appointments">
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold text-gray-800">Tus próximas atenciones</h2>
+        <Link to="/appointments" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+          Ver todas
+        </Link>
+      </div>
+      
       {appointments.length === 0 ? (
-        <p className="text-gray-500 text-center py-4">No upcoming appointments</p>
-      ) : (
-        <div className="space-y-4">
-          {appointments.map((appointment) => (
-            <div key={appointment.id} className="border-b pb-3 last:border-b-0">
-              <div className="flex justify-between items-start mb-1">
-                <h4 className="font-medium">{appointment.doctorName}</h4>
-                {getStatusBadge(appointment.status)}
-              </div>
-              <p className="text-sm text-gray-600">{appointment.specialty}</p>
-              <div className="flex items-center mt-2 text-sm text-gray-500">
-                <span className="mr-4">{formatDate(appointment.date)}</span>
-                <span>{appointment.time}</span>
-              </div>
-            </div>
-          ))}
-          <div className="text-center pt-2">
-            <a href="/appointments" className="text-blue-600 hover:underline text-sm">
-              View all appointments
-            </a>
+        <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          <h3 className="mt-2 text-lg font-medium text-gray-900">No tienes citas programadas</h3>
+          <p className="mt-1 text-sm text-gray-500">¡Tu agenda está libre!</p>
+          <div className="mt-6">
+            <Link to="/appointments/new">
+              <Button>Agendar una cita</Button>
+            </Link>
           </div>
         </div>
+      ) : (
+        <div className="space-y-3">
+          {appointments.map(app => (
+            <div key={app.id} className="bg-white rounded-2xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="bg-emerald-100 text-emerald-700 rounded-lg p-3 mr-4">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-800">{app.specialty}</p>
+                  <p className="text-sm text-gray-600">
+                    {new Date(app.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} - {app.time}
+                  </p>
+              </div>
+              </div>
+              <Link to={`/appointments/${app.id}`} className="text-sm font-medium text-emerald-600 hover:text-emerald-700">
+                Ver detalle
+              </Link>
+            </div>
+          ))}
+        </div>
       )}
-    </Card>
+    </div>
   );
-} 
+};
+
+export default UpcomingAppointments; 

@@ -1,12 +1,20 @@
-import { Navigate } from 'react-router-dom';
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../../../hooks/useAuth';
+import Spinner from '../../ui/Spinner';
 
-export default function ProtectedRoute({ children }) {
-  // This is a simple placeholder. In a real app, you would use a context or hook to check auth status
-  const isAuthenticated = localStorage.getItem('token') !== null;
+const ProtectedRoute = () => {
+  const { isAuthenticated, isLoading } = useAuth();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner size="large" />
+      </div>
+    );
   }
 
-  return children;
-} 
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+};
+
+export default ProtectedRoute; 
