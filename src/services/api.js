@@ -49,9 +49,16 @@ const createHeaders = (additionalHeaders = {}) => {
     ...additionalHeaders,
   };
   
+  // Siempre obtenemos el token más reciente del localStorage
   const token = localStorage.getItem('token');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    // Verificar que no sea un token vacío o inválido
+    if (token === 'undefined' || token === 'null') {
+      console.warn('Token inválido detectado, eliminando...');
+      localStorage.removeItem('token');
+      delete headers['Authorization'];
+    }
   }
   
   return headers;
@@ -67,6 +74,7 @@ export const api = {
     const response = await fetch(url, {
       method: 'GET',
       headers: createHeaders(),
+      credentials: 'same-origin', // Incluir cookies en las solicitudes
     });
     
     return handleResponse(response);
@@ -77,6 +85,7 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: createHeaders(),
+      credentials: 'same-origin', // Incluir cookies en las solicitudes
       body: JSON.stringify(data),
     });
     
@@ -88,6 +97,7 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
       headers: createHeaders(),
+      credentials: 'same-origin', // Incluir cookies en las solicitudes
       body: JSON.stringify(data),
     });
     
@@ -99,6 +109,7 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',
       headers: createHeaders(),
+      credentials: 'same-origin', // Incluir cookies en las solicitudes
     });
     
     return handleResponse(response);
@@ -110,11 +121,22 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: createHeaders({ 'Content-Type': undefined }),
+      credentials: 'same-origin', // Incluir cookies en las solicitudes
       body: formData,
     });
     
     return handleResponse(response);
   },
+  
+  // Método para limpiar cualquier estado de autenticación en el cliente API
+  clearAuthState() {
+    console.log('Limpiando estado de autenticación en el cliente API');
+  }
 };
+
+// Escuchar eventos de storage para actualizar el estado de autenticación
+window.addEventListener('storage', () => {
+  api.clearAuthState();
+});
 
 export default api; 

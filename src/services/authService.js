@@ -1,29 +1,55 @@
 import api from './api';
 
 /**
+ * Función para eliminar todas las cookies
+ */
+const clearAllCookies = () => {
+  // Obtener todas las cookies
+  const cookies = document.cookie.split(";");
+
+  // Eliminar cada cookie
+  for (let i = 0; i < cookies.length; i++) {
+    const cookie = cookies[i];
+    const eqPos = cookie.indexOf("=");
+    const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+  }
+};
+
+/**
  * Service functions for authentication.
  */
 export const authService = {
   /**
    * Logs in a user.
-   * @param {string} username - The user's username (DNI or email).
+   * @param {string} dni - The user's DNI.
    * @param {string} password - The user's password.
    * @returns {Promise<object>} The server response, typically includes a token and user data.
    */
-  async login(username, password) {
+  async login(dni, password) {
     try {
-      const response = await api.post('/auth/login', { username, password });
-      // The response from the backend is wrapped in a generic ApiResponse
+      const response = await api.post('/auth/login', { dni, password });
+
+      // The backend response is wrapped in our standard ApiResponse format.
       // The actual data (AuthResponse) is in the `data` property.
       if (response && response.data) {
-        // Store the token in localStorage
-        localStorage.setItem('token', response.data.token);
-        return response.data;
+        const { token, id, nombre, apellidoPaterno, role } = response.data;
+        
+        // Store token and user info in localStorage
+        localStorage.setItem('token', token);
+        const userToStore = { id, nombre, apellidoPaterno, role };
+        localStorage.setItem('user', JSON.stringify(userToStore));
+        
+        // Return the user data to be used in the AuthContext
+        return { token, user: userToStore };
       }
-      throw new Error(response.message || 'Login failed');
+      
+      // Handle cases where response.data is not what we expect
+      throw new Error(response.message || 'La respuesta del servidor no es válida.');
+
     } catch (error) {
-      // The api helper throws an error with the message from the backend on non-ok responses
-      console.error('Login failed:', error);
+      console.error('Error en el inicio de sesión:', error);
+      // Re-throw the error so the UI layer can handle it (e.g., show a toast notification)
       throw error;
     }
   },
@@ -31,9 +57,41 @@ export const authService = {
   /**
    * Logs out the current user.
    */
-  logout() {
-    // Simply remove the token from localStorage
+  async logout() {
+    try {
+      // Llamar al endpoint de logout en el backend
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Error al cerrar sesión en el servidor:', error);
+      // Continuar con el logout local incluso si falla la llamada al backend
+    } finally {
+      // Limpieza completa de datos de autenticación
+      this.clearAllAuthData();
+    }
+  },
+
+  /**
+   * Limpia todos los datos de autenticación
+   */
+  clearAllAuthData() {
+    // 1. Limpiar localStorage
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
+    
+    // 2. Limpiar sessionStorage por si acaso
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('authToken');
+    
+    // 3. Limpiar todas las cookies
+    clearAllCookies();
+    
+    // 4. Forzar recarga de la configuración de API
+    window.dispatchEvent(new Event('storage')); 
+    
+    console.log('Logout completado: Todos los datos de autenticación han sido eliminados');
   },
 
   /**
@@ -47,19 +105,26 @@ export const authService = {
     }
     // In a real app, you would decode the token to get user info or call an endpoint
     // For now, we just know a token exists. The AuthContext will hold the full user object.
-    return { token };
+    return JSON.parse(localStorage.getItem('user'));
   },
 
-  // Register new user
-  async register(userData) {
+  /**
+   * Registers a new patient.
+   * @param {object} patientData - The patient's registration data.
+   * @returns {Promise<object>} The server response.
+   */
+  async register(patientData) {
     try {
-      const response = await api.post('/auth/register', userData);
-      if (response.token) {
-        localStorage.setItem('token', response.token);
-      }
+      // The endpoint in the backend is '/patients/register' and is public.
+      const response = await api.post('/patients/register', patientData);
+      
+      // On success, the backend returns the created patient data.
+      // We just return the successful response to the context/UI layer.
       return response;
+
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Error en el registro:', error);
+      // Re-throw the error so the UI layer can display a proper message.
       throw error;
     }
   },

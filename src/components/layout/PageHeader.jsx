@@ -19,9 +19,13 @@ const PageHeader = ({ title }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // No necesitamos navegar aquí ya que el logout ahora redirige automáticamente
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
   };
   
   return (

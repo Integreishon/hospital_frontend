@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const Navbar = () => {
@@ -7,6 +7,7 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,6 +18,14 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
 
   const isLandingPage = location.pathname === '/';
   const navbarClasses = `fixed w-full z-50 transition-all duration-300 ${
@@ -85,7 +94,7 @@ const Navbar = () => {
                     Mi Perfil
                   </Link>
                   <button
-                    onClick={logout}
+                    onClick={handleLogout}
                     className={`${linkClasses} cursor-pointer`}
                   >
                     Cerrar Sesión
@@ -213,9 +222,13 @@ const Navbar = () => {
                     Mi Perfil
                   </Link>
                   <button
-                    onClick={() => {
-                      logout();
-                      setIsMobileMenuOpen(false);
+                    onClick={async () => {
+                      try {
+                        setIsMobileMenuOpen(false);
+                        await logout();
+                      } catch (error) {
+                        console.error('Error al cerrar sesión:', error);
+                      }
                     }}
                     className="block w-full text-left text-base font-medium text-gray-900 hover:text-emerald-600"
                   >

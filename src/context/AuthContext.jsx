@@ -11,18 +11,38 @@ export const AuthProvider = ({ children }) => {
   
   useEffect(() => {
     const validateToken = async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
+      const token = localStorage.getItem('token');
+      if (token) {
         try {
-          // The backend has a /auth/validate endpoint
-          const response = await api.get('/auth/validate');
-          if (response.data.valid) {
-            setUser(response.data.user);
-          } else {
-            authService.logout();
+          // Intentar cargar usuario desde localStorage primero
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            setUser(JSON.parse(storedUser));
+          }
+          
+          // Validar token con el backend
+          try {
+            // The backend has a /auth/validate endpoint
+            const response = await api.get('/auth/validate');
+            if (response.data && response.data.valid) {
+              setUser(response.data.user);
+            } else {
+              authService.logout();
+              setUser(null);
+            }
+          } catch (err) {
+            console.error("Error validando token:", err);
+            // Si falla la validación pero tenemos usuario en localStorage,
+            // mantenemos la sesión para mejorar UX (se validará en próximas peticiones)
+            if (!storedUser) {
+              authService.logout();
+              setUser(null);
+            }
           }
         } catch (err) {
+          console.error("Error general en validación:", err);
           authService.logout();
+          setUser(null);
         }
       }
       setIsLoading(false);
@@ -31,20 +51,18 @@ export const AuthProvider = ({ children }) => {
     validateToken();
   }, []);
 
-  const login = async (username, password) => {
+  const login = async (dni, password) => {
     setIsLoading(true);
     setError(null);
     try {
-      const userData = await authService.login(username, password);
-      setUser({
-        id: userData.userId,
-        email: userData.email,
-        role: userData.role,
-      });
+      // The authService.login function now returns an object with { token, user }
+      const { user: loggedInUser } = await authService.login(dni, password);
+      setUser(loggedInUser); // The user object is already shaped correctly
       return true;
     } catch (err) {
-      setError(err.message || 'Failed to login');
-      throw err; // Re-throw to allow component to handle the error
+      const errorMessage = err.response?.data?.message || err.message || 'Error en el inicio de sesión.';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -69,9 +87,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    authService.logout();
-    setUser(null);
+  const logout = async () => {
+    try {
+      // Primero limpiamos el estado
+      setUser(null);
+      
+      // Luego llamamos al servicio de autenticación para limpiar localStorage, etc.
+      await authService.logout();
+      
+      // Forzamos una limpieza adicional
+      authService.clearAllAuthData();
+      
+      // Opcionalmente, podemos forzar una recarga de la página para limpiar cualquier estado
+      // Esto garantiza que todo el estado de la aplicación se reinicie
+      window.location.href = '/login';
+      
+      return true;
+    } catch (error) {
+      console.error("Error durante el logout:", error);
+      // Intentar limpieza de emergencia
+      authService.clearAllAuthData();
+      window.location.href = '/login';
+    }
   };
 
   const value = {

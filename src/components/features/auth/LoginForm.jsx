@@ -1,27 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import Button from '../../ui/Button';
 
 const LoginForm = () => {
-  const [username, setUsername] = useState('');
+  const [dni, setDni] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!dni || !password) {
+      setError('El DNI y la contraseña son obligatorios.');
+      return;
+    }
+    
     setError('');
     setIsLoading(true);
     
     try {
-      await login(username, password);
-      navigate('/dashboard');
+      await login(dni, password);
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Error al iniciar sesión. Por favor, verifica tus credenciales.');
+      setError(err.message || 'Error al iniciar sesión. Por favor, verifica tus credenciales.');
     } finally {
       setIsLoading(false);
     }
@@ -45,8 +56,8 @@ const LoginForm = () => {
       )}
 
       <div>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-          DNI o Email
+        <label htmlFor="dni" className="block text-sm font-medium text-gray-700 mb-1">
+          DNI
           </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -55,15 +66,15 @@ const LoginForm = () => {
             </svg>
           </div>
           <input
-            id="username"
-            name="username"
+            id="dni"
+            name="dni"
             type="text"
             autoComplete="username"
             required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={dni}
+            onChange={(e) => setDni(e.target.value)}
             className="pl-10 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-gray-900 py-3"
-            placeholder="Ingresa tu DNI o email"
+            placeholder="Ingresa tu DNI"
           />
         </div>
       </div>

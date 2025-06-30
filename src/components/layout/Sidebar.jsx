@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [expandedSection, setExpandedSection] = useState(null);
 
   const toggleSection = (section) => {
     setExpandedSection(expandedSection === section ? null : section);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // No necesitamos navegar aquí ya que el logout ahora redirige automáticamente
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
   };
 
   // Estructura de navegación basada en el backend
@@ -225,7 +235,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       {/* Footer */}
       <div className="p-4 border-t border-gray-200">
         <button
-          onClick={logout}
+          onClick={handleLogout}
           className={`flex items-center w-full px-3 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50
             ${!isOpen ? 'justify-center' : ''}
           `}
