@@ -25,88 +25,37 @@ export default function SpecialtySelector({ onSelect, selectedSpecialty }) {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Datos de demostración para usar en caso de error
-  const demoSpecialties = [
-    {
-      id: 1,
-      name: 'Medicina General',
-      description: 'Consulta médica general para diagnóstico y tratamiento de enfermedades comunes',
-      consultationPrice: 80.00,
-      discountPercentage: 0,
-      finalPrice: 80.00
-    },
-    {
-      id: 2,
-      name: 'Cardiología',
-      description: 'Especialidad médica que se ocupa del diagnóstico y tratamiento de las enfermedades del corazón',
-      consultationPrice: 150.00,
-      discountPercentage: 10,
-      finalPrice: 135.00
-    },
-    {
-      id: 3,
-      name: 'Dermatología',
-      description: 'Especialidad médica encargada del estudio de la piel, su estructura, función y enfermedades',
-      consultationPrice: 120.00,
-      discountPercentage: 5,
-      finalPrice: 114.00
-    },
-    {
-      id: 4,
-      name: 'Pediatría',
-      description: 'Especialidad médica que estudia al niño y sus enfermedades',
-      consultationPrice: 100.00,
-      discountPercentage: 0,
-      finalPrice: 100.00
-    },
-    {
-      id: 5,
-      name: 'Oftalmología',
-      description: 'Especialidad médica que estudia las enfermedades del ojo y su tratamiento',
-      consultationPrice: 130.00,
-      discountPercentage: 0,
-      finalPrice: 130.00
-    }
-  ];
-
   useEffect(() => {
     const fetchSpecialties = async () => {
       try {
         setLoading(true);
         const response = await specialtyService.getAllActiveSpecialties();
         
-        // Verificar la estructura de la respuesta
-        let specialtiesData = [];
-        
-        if (Array.isArray(response)) {
-          // Si la respuesta es directamente un array
-          specialtiesData = response;
-        } else if (response && response.data && Array.isArray(response.data)) {
-          // Si la respuesta tiene una propiedad data que es un array
-          specialtiesData = response.data;
-        } else if (response && response.content && Array.isArray(response.content)) {
-          // Si la respuesta tiene una propiedad content que es un array (formato de paginación)
-          specialtiesData = response.content;
-        } else {
-          // Si no podemos identificar la estructura, usamos datos de demostración
-          console.warn('Estructura de respuesta no reconocida, usando datos de demostración para especialidades');
-          specialtiesData = demoSpecialties;
+        // Verificar si la respuesta es un array
+        if (!Array.isArray(response)) {
+          console.error("La respuesta de la API no es un array:", response);
+          throw new Error("Formato de respuesta inesperado del servidor.");
         }
-        
-        setSpecialties(specialtiesData.map(specialty => ({
+
+        // MODIFICACIÓN: Forzar que todas las especialidades estén disponibles sin restricciones
+        setSpecialties(response.map(specialty => ({
           id: specialty.id,
           name: specialty.name || 'Especialidad sin nombre',
           description: specialty.description || 'Consulta médica especializada',
           consultationPrice: specialty.consultationPrice || 0,
           discountPercentage: specialty.discountPercentage || 0,
-          finalPrice: specialty.finalPrice || specialty.consultationPrice || 0
+          finalPrice: specialty.finalPrice || specialty.consultationPrice || 0,
+          // IMPORTANTE: Quitar cualquier restricción
+          requiresReferral: false, // Forzar que no requiera derivación
+          isAvailable: true, // Forzar que esté disponible
+          allowDirectBooking: true // Permitir reserva directa
         })));
         setError(null);
       } catch (err) {
         console.error('Error fetching specialties:', err);
         setError('No se pudieron cargar las especialidades. Por favor, intente nuevamente.');
-        // Usar datos de demostración en caso de error
-        setSpecialties(demoSpecialties);
+        // Si hay error, mostrar lista vacía - NO datos ficticios
+        setSpecialties([]);
       } finally {
         setLoading(false);
       }
@@ -227,10 +176,13 @@ export default function SpecialtySelector({ onSelect, selectedSpecialty }) {
           ))
         ) : (
           <div className="col-span-full text-center py-8 text-gray-500">
-            No se encontraron especialidades que coincidan con su búsqueda.
+            {searchTerm 
+              ? "No se encontraron especialidades que coincidan con su búsqueda."
+              : "No hay especialidades disponibles en este momento."
+            }
           </div>
         )}
       </div>
     </div>
   );
-} 
+}

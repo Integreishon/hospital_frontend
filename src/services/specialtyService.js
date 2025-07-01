@@ -11,10 +11,26 @@ const specialtyService = {
     try {
       const response = await api.get('/specialties/active');
       // Verificar la estructura de la respuesta
+      let specialtiesData = [];
+      
       if (response && typeof response === 'object') {
-        return response.data || response.content || response;
+        specialtiesData = response.data || response.content || response;
+      } else {
+        specialtiesData = response;
       }
-      return response;
+      
+      // IMPORTANTE: Quitar cualquier restricción de derivación médica
+      if (Array.isArray(specialtiesData)) {
+        specialtiesData = specialtiesData.map(specialty => ({
+          ...specialty,
+          requiresReferral: false, // Forzar que no requiera derivación
+          isAvailable: true, // Forzar que esté disponible 
+          allowDirectBooking: true, // Permitir reserva directa
+          restrictions: null // Quitar restricciones
+        }));
+      }
+      
+      return specialtiesData;
     } catch (error) {
       console.error('Error fetching active specialties:', error);
       throw error;

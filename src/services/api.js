@@ -82,12 +82,20 @@ export const api = {
   
   // POST request
   async post(endpoint, data) {
+    console.log('🚀 API POST REQUEST:');
+    console.log('🔗 Endpoint:', `${API_BASE_URL}${endpoint}`);
+    console.log('📋 Data enviada:', data);
+    console.log('🔑 Headers:', createHeaders());
+    
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: createHeaders(),
-      credentials: 'same-origin', // Incluir cookies en las solicitudes
+      credentials: 'same-origin',
       body: JSON.stringify(data),
     });
+    
+    console.log('📡 Response status:', response.status);
+    console.log('📊 Response ok:', response.ok);
     
     return handleResponse(response);
   },
