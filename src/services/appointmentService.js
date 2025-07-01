@@ -7,9 +7,9 @@ const appointmentService = {
   /**
    * Obtener todas las citas del paciente actual
    */
-  getMyAppointments: async (page = 0, size = 10) => {
+  getMyAppointments: async () => {
     try {
-      const response = await api.get('/appointments/my-appointments', { page, size });
+      const response = await api.get('/appointments/me');
       if (response && typeof response === 'object') {
         return response.data || response.content || response;
       }

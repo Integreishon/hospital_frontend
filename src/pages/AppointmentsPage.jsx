@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AppointmentList from '../components/features/appointments/AppointmentList';
 import AppointmentCalendar from '../components/features/appointments/AppointmentCalendar';
-import * as appointmentService from '../services/appointmentService';
+import appointmentService from '../services/appointmentService';
 
 // Componente para la tarjeta de cita
 const AppointmentCard = ({ appointment, onViewDetails }) => {
@@ -79,16 +79,64 @@ const AppointmentsPage = () => {
   const [appointments, setAppointments] = useState([]);
   const [view, setView] = useState('list'); // 'list' or 'calendar'
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null); // Estado para manejar errores
   const [filter, setFilter] = useState('all'); // 'all', 'upcoming', 'past', 'cancelled'
 
   useEffect(() => {
     const fetchAppointments = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
-        // Para desarrollo, usamos datos de ejemplo
-        const response = await appointmentService.getDemoAppointments();
-        setAppointments(response.data);
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
+        // Llamada al servicio REAL para obtener las citas del usuario.
+        // `getMyAppointments` ya devuelve el array de datos, no el objeto ApiResponse completo.
+        const appointmentsFromApi = await appointmentService.getMyAppointments();
+        
+        // Verificamos si la respuesta es un array antes de mapear para evitar errores.
+        if (!Array.isArray(appointmentsFromApi)) {
+          console.error("La respuesta de la API no es un array:", appointmentsFromApi);
+          throw new Error("Formato de respuesta inesperado del servidor.");
+        }
+
+        // Adaptar la respuesta del backend al formato que el frontend espera
+        // La corrección clave: usamos la respuesta directa, no `response.data`
+        const formattedAppointments = appointmentsFromApi.map(app => {
+          let statusText = 'Desconocido';
+          switch (app.status) {
+            case 'SCHEDULED':
+              statusText = 'Agendada';
+              break;
+            case 'COMPLETED':
+              statusText = 'Completada';
+              break;
+            case 'CANCELLED':
+              statusText = 'Cancelada';
+              break;
+            case 'PENDING_VALIDATION':
+              statusText = 'Pendiente';
+              break;
+            case 'IN_PROGRESS':
+              statusText = 'En Progreso';
+              break;
+            case 'NO_SHOW':
+              statusText = 'No Asistió';
+              break;
+          }
+
+          return {
+            id: app.id,
+            specialty: app.specialtyName,
+            doctor: app.doctorName,
+            date: app.appointmentDate,
+            time: app.timeBlock, // Puedes formatear esto mejor si lo necesitas
+            status: statusText,
+            location: 'Consultorio 302' // Este dato parece estático por ahora
+          };
+        });
+        
+        setAppointments(formattedAppointments);
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+        setError('No se pudieron cargar las citas. Intente de nuevo más tarde.');
       } finally {
         setIsLoading(false);
       }
@@ -109,55 +157,6 @@ const AppointmentsPage = () => {
     if (filter === 'cancelled') return appointment.status === 'Cancelada';
     return true;
   });
-
-  // Datos de ejemplo para mostrar en la interfaz
-  const mockAppointments = [
-    {
-      id: 1,
-      specialty: 'Urología',
-      doctor: 'Juan Pérez',
-      date: '12 Jul 2023',
-      time: '10:30 AM',
-      status: 'Confirmada',
-      location: 'Consultorio 302'
-    },
-    {
-      id: 2,
-      specialty: 'Laboratorio',
-      doctor: 'María López',
-      date: '15 Jul 2023',
-      time: '09:00 AM',
-      status: 'Pendiente',
-      location: 'Laboratorio Central'
-    },
-    {
-      id: 3,
-      specialty: 'Urología',
-      doctor: 'Juan Pérez',
-      date: '22 Jul 2023',
-      time: '11:00 AM',
-      status: 'Confirmada',
-      location: 'Consultorio 302'
-    },
-    {
-      id: 4,
-      specialty: 'Urología',
-      doctor: 'Carlos Mendoza',
-      date: '05 Jun 2023',
-      time: '09:30 AM',
-      status: 'Completada',
-      location: 'Consultorio 301'
-    },
-    {
-      id: 5,
-      specialty: 'Laboratorio',
-      doctor: 'Ana Sánchez',
-      date: '10 Jun 2023',
-      time: '08:00 AM',
-      status: 'Cancelada',
-      location: 'Laboratorio Central'
-    }
-  ];
 
   return (
     <div className="p-6">
@@ -256,7 +255,36 @@ const AppointmentsPage = () => {
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#0066CC]"></div>
           </div>
-        ) : mockAppointments.length === 0 ? (
+        ) : error ? (
+          <div className="text-center py-16">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">{error}</h3>
+            <div className="mt-6">
+              <Link
+                to="/appointments/new"
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#0066CC] hover:bg-[#0066CC]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0066CC]"
+              >
+                <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nueva Cita
+              </Link>
+            </div>
+          </div>
+        ) : filteredAppointments.length === 0 ? (
           <div className="text-center py-16">
             <svg
               className="mx-auto h-12 w-12 text-gray-400"
@@ -289,27 +317,18 @@ const AppointmentsPage = () => {
         ) : view === 'list' ? (
           <div className="p-6">
             <div className="space-y-4">
-              {mockAppointments
-                .filter(appointment => {
-                  if (filter === 'all') return true;
-                  if (filter === 'upcoming') return ['Confirmada', 'Pendiente'].includes(appointment.status);
-                  if (filter === 'past') return appointment.status === 'Completada';
-                  if (filter === 'cancelled') return appointment.status === 'Cancelada';
-                  return true;
-                })
-                .map(appointment => (
+              {filteredAppointments.map(appointment => (
                   <AppointmentCard 
                     key={appointment.id} 
                     appointment={appointment} 
                     onViewDetails={handleViewDetails} 
                   />
-                ))
-              }
+              ))}
             </div>
           </div>
         ) : (
           <div className="p-6">
-            <AppointmentCalendar appointments={mockAppointments} />
+            <AppointmentCalendar appointments={filteredAppointments} />
           </div>
         )}
       </div>

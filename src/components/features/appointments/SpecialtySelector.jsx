@@ -31,31 +31,41 @@ export default function SpecialtySelector({ onSelect, selectedSpecialty }) {
       id: 1,
       name: 'Medicina General',
       description: 'Consulta médica general para diagnóstico y tratamiento de enfermedades comunes',
-      price: 80.00
+      consultationPrice: 80.00,
+      discountPercentage: 0,
+      finalPrice: 80.00
     },
     {
       id: 2,
       name: 'Cardiología',
       description: 'Especialidad médica que se ocupa del diagnóstico y tratamiento de las enfermedades del corazón',
-      price: 150.00
+      consultationPrice: 150.00,
+      discountPercentage: 10,
+      finalPrice: 135.00
     },
     {
       id: 3,
       name: 'Dermatología',
       description: 'Especialidad médica encargada del estudio de la piel, su estructura, función y enfermedades',
-      price: 120.00
+      consultationPrice: 120.00,
+      discountPercentage: 5,
+      finalPrice: 114.00
     },
     {
       id: 4,
       name: 'Pediatría',
       description: 'Especialidad médica que estudia al niño y sus enfermedades',
-      price: 100.00
+      consultationPrice: 100.00,
+      discountPercentage: 0,
+      finalPrice: 100.00
     },
     {
       id: 5,
       name: 'Oftalmología',
       description: 'Especialidad médica que estudia las enfermedades del ojo y su tratamiento',
-      price: 130.00
+      consultationPrice: 130.00,
+      discountPercentage: 0,
+      finalPrice: 130.00
     }
   ];
 
@@ -87,7 +97,9 @@ export default function SpecialtySelector({ onSelect, selectedSpecialty }) {
           id: specialty.id,
           name: specialty.name || 'Especialidad sin nombre',
           description: specialty.description || 'Consulta médica especializada',
-          price: specialty.price
+          consultationPrice: specialty.consultationPrice || 0,
+          discountPercentage: specialty.discountPercentage || 0,
+          finalPrice: specialty.finalPrice || specialty.consultationPrice || 0
         })));
         setError(null);
       } catch (err) {
@@ -118,6 +130,14 @@ export default function SpecialtySelector({ onSelect, selectedSpecialty }) {
         specialty.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : specialties;
+
+  // Formatear precio para mostrar
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('es-PE', {
+      style: 'currency',
+      currency: 'PEN'
+    }).format(price);
+  };
 
   if (loading) {
     return (
@@ -167,20 +187,42 @@ export default function SpecialtySelector({ onSelect, selectedSpecialty }) {
                 selectedSpecialty === specialty.id
                   ? 'bg-emerald-50 border-emerald-500 border-2 shadow-md'
                   : 'bg-white border border-gray-200 hover:border-emerald-300 hover:shadow-md'
-              } rounded-xl p-4 flex flex-col items-center`}
+              } rounded-xl p-4`}
             >
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-3">
-                <div className="text-2xl">
-                  {getSpecialtyIcon(specialty.name)}
+              <div className="flex items-center mb-3">
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                  <div className="text-xl">
+                    {getSpecialtyIcon(specialty.name)}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800">{specialty.name}</h4>
+                  <p className="text-xs text-gray-500 line-clamp-2">{specialty.description}</p>
                 </div>
               </div>
-              <h4 className="font-semibold text-center text-gray-800">{specialty.name}</h4>
-              <p className="text-xs text-gray-500 text-center mt-1 line-clamp-2">{specialty.description}</p>
-              {specialty.price && (
-                <div className="mt-3 bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-medium">
-                  S/. {specialty.price.toFixed(2)}
+              
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-gray-500">Precio:</span>
+                    <div className="font-semibold text-gray-800">
+                      {formatPrice(specialty.finalPrice)}
+                    </div>
+                  </div>
+                  
+                  {specialty.discountPercentage > 0 && (
+                    <div className="text-right">
+                      <span className="text-xs text-gray-500">Antes:</span>
+                      <div className="line-through text-sm text-gray-400">
+                        {formatPrice(specialty.consultationPrice)}
+                      </div>
+                      <div className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-medium mt-1">
+                        -{specialty.discountPercentage}%
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           ))
         ) : (

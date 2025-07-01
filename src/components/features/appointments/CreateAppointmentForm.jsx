@@ -5,7 +5,7 @@ import Spinner from '../../ui/Spinner';
 import Alert from '../../ui/Alert';
 import SpecialtySelector from './SpecialtySelector';
 import DoctorSelector from './DoctorSelector';
-import TimeBlockSelector from './TimeBlockSelector';
+import AppointmentCalendar from './AppointmentCalendar';
 import useAuth from '../../../hooks/useAuth';
 import appointmentService from '../../../services/appointmentService';
 
@@ -38,6 +38,7 @@ export default function CreateAppointmentForm() {
       ...prev, 
       specialtyId,
       doctorId: null, // Resetear doctor al cambiar especialidad
+      appointmentDate: '', // Resetear fecha
       timeBlock: '' // Resetear bloque de tiempo
     }));
   };
@@ -46,20 +47,17 @@ export default function CreateAppointmentForm() {
     setFormData(prev => ({ 
       ...prev, 
       doctorId,
+      appointmentDate: '', // Resetear fecha al cambiar doctor
       timeBlock: '' // Resetear bloque de tiempo al cambiar doctor
     }));
   };
 
-  const handleDateChange = (e) => {
+  const handleDateTimeSelect = (date, timeBlock) => {
     setFormData(prev => ({ 
       ...prev, 
-      appointmentDate: e.target.value,
-      timeBlock: '' // Resetear bloque de tiempo al cambiar fecha
+      appointmentDate: date,
+      timeBlock: timeBlock
     }));
-  };
-
-  const handleTimeBlockSelect = (timeBlock) => {
-    setFormData(prev => ({ ...prev, timeBlock }));
   };
 
   const handleReasonChange = (e) => {
@@ -108,7 +106,6 @@ export default function CreateAppointmentForm() {
       
       // Preparar datos para enviar al backend
       const appointmentData = {
-        patientId: user.id, // ID del paciente autenticado
         specialtyId: formData.specialtyId,
         doctorId: formData.doctorId,
         appointmentDate: formData.appointmentDate,
@@ -122,11 +119,6 @@ export default function CreateAppointmentForm() {
       // Mostrar mensaje de éxito
       setSuccess(true);
       
-      // Redireccionar después de un tiempo
-      setTimeout(() => {
-        navigate('/appointments');
-      }, 2000);
-      
     } catch (err) {
       console.error('Error al crear la cita:', err);
       setError(err.message || 'Ocurrió un error al agendar la cita. Por favor, intente nuevamente.');
@@ -138,19 +130,43 @@ export default function CreateAppointmentForm() {
   // Si la cita se creó exitosamente
   if (success) {
     return (
-      <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="text-center">
+        <div className="bg-emerald-500 py-12">
+          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-12 h-12 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
           </svg>
+          </div>
+          <h2 className="text-3xl font-bold text-white">¡Tu cita fue agendada con éxito!</h2>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Cita agendada exitosamente!</h2>
+
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto -mt-12 relative">
+          <p className="text-gray-600 mb-8">
+            Recibirás un correo con la confirmación y los detalles. Recuerda que también podrás verla en la sección Mis citas.
+          </p>
+
+          <div className="border-t border-gray-200 pt-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">¡Ahorra tiempo!</h3>
         <p className="text-gray-600 mb-6">
-          Su cita ha sido programada correctamente. En breve será redirigido a la página de citas.
-        </p>
-        <Button onClick={() => navigate('/appointments')}>
-          Ver mis citas
+              Paga tu cita usando la APP y pasa directo al consultorio
+            </p>
+            <div className="flex justify-center space-x-4">
+              <Button 
+                onClick={() => alert('Funcionalidad de pago pendiente de implementación')}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+              >
+                PAGAR CITA
+              </Button>
+              <Button 
+                onClick={() => navigate('/appointments')}
+                variant="outline"
+                className="text-emerald-500 border-emerald-500 hover:bg-emerald-50"
+              >
+                VER EN MIS CITAS
         </Button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -213,28 +229,12 @@ export default function CreateAppointmentForm() {
           
           {/* Paso 3: Selección de fecha y horario */}
           {step === 3 && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="text-xl font-semibold mb-4">Seleccione una fecha</h3>
-                <input
-                  type="date"
-                  value={formData.appointmentDate}
-                  onChange={handleDateChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  min={new Date().toISOString().split('T')[0]}
-                  required
-                />
-              </div>
-              
-              {formData.appointmentDate && formData.doctorId && (
-                <TimeBlockSelector 
+            <AppointmentCalendar 
                   doctorId={formData.doctorId} 
-                  date={formData.appointmentDate} 
-                  onSelect={handleTimeBlockSelect} 
-                  selectedTime={formData.timeBlock} 
+              onSelectDateTime={handleDateTimeSelect}
+              selectedDate={formData.appointmentDate}
+              selectedTimeBlock={formData.timeBlock}
                 />
-              )}
-            </div>
           )}
           
           {/* Paso 4: Motivo de la consulta */}
@@ -251,17 +251,27 @@ export default function CreateAppointmentForm() {
                 placeholder="Describa sus síntomas o el motivo de su consulta..."
                 required
               ></textarea>
+              
+              {/* Resumen de la cita */}
+              <div className="mt-6 bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">Resumen de su cita:</h4>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li><span className="font-medium">Especialidad:</span> {formData.specialtyId}</li>
+                  <li><span className="font-medium">Doctor:</span> {formData.doctorId}</li>
+                  <li><span className="font-medium">Fecha:</span> {formData.appointmentDate}</li>
+                  <li><span className="font-medium">Horario:</span> {formData.timeBlock === 'MORNING' ? 'Mañana (7:00 - 13:00)' : 'Tarde (16:00 - 20:00)'}</li>
+                </ul>
+              </div>
             </div>
           )}
           
           {/* Botones de navegación */}
-          <div className="flex justify-between mt-8">
+          <div className="mt-6 flex justify-between">
             {step > 1 && (
               <Button 
                 type="button" 
+                variant="secondary" 
                 onClick={handlePrevStep} 
-                variant="secondary"
-                disabled={loading}
               >
                 Anterior
               </Button>
@@ -272,7 +282,6 @@ export default function CreateAppointmentForm() {
                 <Button 
                   type="button" 
                   onClick={handleNextStep}
-                  disabled={loading}
                 >
                   Siguiente
                 </Button>
@@ -281,7 +290,14 @@ export default function CreateAppointmentForm() {
                   type="submit"
                   disabled={loading}
                 >
-                  {loading ? <><Spinner size="sm" className="mr-2" /> Agendando...</> : 'Agendar Cita'}
+                  {loading ? (
+                    <>
+                      <Spinner size="sm" className="mr-2" />
+                      Agendando...
+                    </>
+                  ) : (
+                    'Agendar cita'
+                  )}
                 </Button>
               )}
             </div>

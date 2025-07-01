@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import appointmentService from '../services/appointmentService';
+import Spinner from '../components/ui/Spinner';
+import Alert from '../components/ui/Alert';
+import Button from '../components/ui/Button';
 
 // Componentes del Dashboard
 const WelcomeCard = ({ user }) => {
@@ -35,69 +39,7 @@ const WelcomeCard = ({ user }) => {
   );
 };
 
-const StatsCard = () => {
-  return (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-      <div className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900">Resumen de Salud</h3>
-        <div className="mt-5 grid grid-cols-2 gap-5 sm:grid-cols-4">
-          <div className="bg-[#E6F3FF] rounded-lg p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#0066CC] flex items-center justify-center">
-                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Citas</p>
-                <p className="text-lg font-semibold text-gray-900">3</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#E6F3FF] rounded-lg p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#0066CC] flex items-center justify-center">
-                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m-6-8h6M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Recetas</p>
-                <p className="text-lg font-semibold text-gray-900">2</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#E6F3FF] rounded-lg p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#0066CC] flex items-center justify-center">
-                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Resultados</p>
-                <p className="text-lg font-semibold text-gray-900">5</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#E6F3FF] rounded-lg p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-[#0066CC] flex items-center justify-center">
-                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-500">Pagos</p>
-                <p className="text-lg font-semibold text-gray-900">1</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+
 
 const AppointmentCard = ({ appointment }) => {
   return (
@@ -219,32 +161,56 @@ const QuickActions = () => {
 };
 
 const UpcomingAppointments = () => {
-  const appointments = [
-    {
-      id: 1,
-      specialty: 'Urología',
-      doctor: 'Juan Pérez',
-      date: '12 Jul 2023',
-      time: '10:30 AM',
-      status: 'Confirmada',
-    },
-    {
-      id: 2,
-      specialty: 'Laboratorio',
-      doctor: 'María López',
-      date: '15 Jul 2023',
-      time: '09:00 AM',
-      status: 'Pendiente',
-    },
-    {
-      id: 3,
-      specialty: 'Urología',
-      doctor: 'Juan Pérez',
-      date: '22 Jul 2023',
-      time: '11:00 AM',
-      status: 'Confirmada',
-    },
-  ];
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const getStatusInSpanish = (status) => {
+    switch (status) {
+      case 'SCHEDULED': return 'Agendada';
+      case 'CONFIRMED': return 'Confirmada';
+      case 'CANCELLED': return 'Cancelada';
+      case 'COMPLETED': return 'Completada';
+      default: return status;
+    }
+  };
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setLoading(true);
+        const data = await appointmentService.getMyAppointments();
+        
+        const formattedAppointments = data.map(app => ({
+          id: app.id,
+          specialty: app.specialtyName || 'No especificada',
+          doctor: app.doctorName || 'Médico no asignado',
+          date: new Date(app.appointmentDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+          time: app.timeBlock,
+          status: getStatusInSpanish(app.status),
+          rawStatus: app.status,
+          rawDate: app.appointmentDate,
+        }));
+
+        const upcoming = formattedAppointments
+          .filter(app => 
+            (app.rawStatus === 'SCHEDULED' || app.rawStatus === 'CONFIRMED') &&
+            new Date(app.rawDate) >= new Date()
+          )
+          .sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate))
+          .slice(0, 3);
+
+        setAppointments(upcoming);
+      } catch (err) {
+        console.error("Error fetching upcoming appointments:", err);
+        setError('No se pudieron cargar las próximas citas.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
 
   return (
     <div className="bg-white rounded-2xl shadow-md overflow-hidden">
@@ -255,11 +221,33 @@ const UpcomingAppointments = () => {
             Ver todas
           </Link>
         </div>
-        <div className="mt-5 space-y-4">
-          {appointments.map((appointment) => (
-            <AppointmentCard key={appointment.id} appointment={appointment} />
-          ))}
-        </div>
+
+        {loading && <div className="flex justify-center p-8"><Spinner /></div>}
+        
+        {error && !loading && <Alert type="error">{error}</Alert>}
+
+        {!loading && !error && appointments.length === 0 && (
+          <div className="text-center text-gray-500 py-6">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No tienes próximas citas</h3>
+            <p className="mt-1 text-sm text-gray-500">¡Agenda una nueva cita para empezar!</p>
+            <div className="mt-6">
+                <Button onClick={() => window.location.href='/appointments/new'} variant="primary">
+                  Agendar Cita
+                </Button>
+            </div>
+          </div>
+        )}
+
+        {!loading && !error && appointments.length > 0 && (
+          <div className="mt-4 space-y-4">
+            {appointments.map((appointment) => (
+              <AppointmentCard key={appointment.id} appointment={appointment} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -374,15 +362,14 @@ const DashboardPage = () => {
         {/* Welcome Card */}
         <WelcomeCard user={user} />
         
-        {/* Stats */}
-        <StatsCard />
+    
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Quick Actions */}
           <QuickActions />
           
           {/* Top Doctors */}
-          <TopDoctors />
+          {/* <TopDoctors /> */}
         </div>
         
         {/* Upcoming Appointments */}

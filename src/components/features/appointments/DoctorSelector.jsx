@@ -16,13 +16,14 @@ export default function DoctorSelector({ specialtyId, onSelect, selectedDoctor }
 
     const fetchDoctors = async () => {
       try {
-    setLoading(true);
+        setLoading(true);
         const doctorsData = await doctorService.getDoctorsBySpecialty(specialtyId);
         setDoctors(doctorsData.map(doctor => ({
           id: doctor.id,
           name: doctor.firstName && doctor.lastName 
             ? `Dr. ${doctor.firstName} ${doctor.lastName}`
             : 'Sin nombre',
+          cmpNumber: doctor.cmpNumber || 'N/A',
           specialties: doctor.specialties || []
         })));
         setError(null);
@@ -40,7 +41,8 @@ export default function DoctorSelector({ specialtyId, onSelect, selectedDoctor }
 
   const filteredDoctors = searchTerm
     ? doctors.filter(doctor =>
-        doctor.name.toLowerCase().includes(searchTerm.toLowerCase())
+        doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doctor.cmpNumber.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : doctors;
 
@@ -87,7 +89,7 @@ export default function DoctorSelector({ specialtyId, onSelect, selectedDoctor }
         <div className="relative">
           <input
             type="text"
-            placeholder="Buscar médico..."
+            placeholder="Buscar por nombre o CMP..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -130,7 +132,10 @@ export default function DoctorSelector({ specialtyId, onSelect, selectedDoctor }
                 </div>
                 <div className="ml-4 flex-1">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-lg text-gray-800">{doctor.name}</h4>
+                    <div>
+                      <h4 className="font-semibold text-lg text-gray-800">{doctor.name}</h4>
+                      <p className="text-sm text-gray-600">CMP: {doctor.cmpNumber}</p>
+                    </div>
                   </div>
                   {doctor.specialties && doctor.specialties.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
