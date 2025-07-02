@@ -16,6 +16,10 @@ const AppointmentList = ({ appointments }) => {
         return 'bg-red-50 text-red-700 ring-red-600/10';
       case 'NO_SHOW':
         return 'bg-yellow-50 text-yellow-700 ring-yellow-600/20';
+      case 'PENDING_VALIDATION':
+        return 'bg-purple-50 text-purple-700 ring-purple-600/20';
+      case 'IN_PROGRESS':
+        return 'bg-indigo-50 text-indigo-700 ring-indigo-600/20';
       default:
         return 'bg-gray-50 text-gray-600 ring-gray-500/10';
     }
@@ -33,8 +37,12 @@ const AppointmentList = ({ appointments }) => {
         return 'Cancelada';
       case 'NO_SHOW':
         return 'No Asistió';
+      case 'PENDING_VALIDATION':
+        return 'Pendiente';
+      case 'IN_PROGRESS':
+        return 'En Curso';
       default:
-        return status;
+        return status || 'Desconocido';
     }
   };
 
@@ -47,9 +55,31 @@ const AppointmentList = ({ appointments }) => {
       case 'EVENING':
         return 'Noche (18:00 - 22:00)';
       default:
-        return timeBlock;
+        return timeBlock || 'Horario no especificado';
     }
   };
+
+  const formatDate = (dateStr) => {
+    try {
+      if (!dateStr) return 'Fecha no disponible';
+      
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return 'Fecha inválida';
+      
+      return format(date, "EEEE d 'de' MMMM, yyyy", { locale: es });
+    } catch (error) {
+      console.error('Error al formatear fecha:', error);
+      return 'Error en formato de fecha';
+    }
+  };
+
+  if (!appointments || appointments.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No hay citas para mostrar</p>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden">
@@ -73,21 +103,28 @@ const AppointmentList = ({ appointments }) => {
               <div className="min-w-0 flex-auto">
                 <p className="text-sm font-semibold leading-6 text-gray-900">
                   <Link to={`/appointments/${appointment.id}`} className="hover:underline">
-                    {appointment.doctorName}
+                    {appointment.doctorName || 'Doctor no asignado'}
                   </Link>
                 </p>
                 <p className="mt-1 flex text-xs leading-5 text-gray-500">
-                  <span className="truncate">{appointment.specialtyName}</span>
+                  <span className="truncate">{appointment.specialtyName || 'Especialidad no especificada'}</span>
                 </p>
-        </div>
-      </div>
+                {appointment.reason && (
+                  <p className="mt-1 text-xs leading-5 text-gray-500 truncate">
+                    Motivo: {appointment.reason}
+                  </p>
+                )}
+              </div>
+            </div>
             <div className="flex shrink-0 items-center gap-x-4">
               <div className="hidden sm:flex sm:flex-col sm:items-end">
                 <p className="text-sm leading-6 text-gray-900">
-                  {format(new Date(appointment.appointmentDate), "EEEE d 'de' MMMM, yyyy", { locale: es })}
+                  {formatDate(appointment.appointmentDate)}
                 </p>
-                <p className="mt-1 text-xs leading-5 text-gray-500">{getTimeBlockText(appointment.timeBlock)}</p>
-        </div>
+                <p className="mt-1 text-xs leading-5 text-gray-500">
+                  {getTimeBlockText(appointment.timeBlock)}
+                </p>
+              </div>
               <div className="flex flex-col items-end">
                 <p
                   className={`rounded-md whitespace-nowrap mt-0.5 px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColor(
@@ -97,7 +134,11 @@ const AppointmentList = ({ appointments }) => {
                   {getStatusText(appointment.status)}
                 </p>
                 {appointment.paymentStatus && (
-                  <p className="mt-1 text-xs leading-5 text-gray-500">
+                  <p className={`mt-1 text-xs leading-5 rounded-md px-2 py-0.5 ${
+                    appointment.paymentStatus === 'COMPLETED' 
+                      ? 'text-green-700 bg-green-50' 
+                      : 'text-yellow-700 bg-yellow-50'
+                  }`}>
                     {appointment.paymentStatus === 'COMPLETED' ? 'Pago completado' : 'Pago pendiente'}
                   </p>
                 )}

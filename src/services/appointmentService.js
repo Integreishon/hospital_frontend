@@ -93,41 +93,57 @@ const getPendingAppointments = () => {
  */
 const appointmentService = {
   /**
-   * Obtener todas las citas del paciente actual
+   * Obtener todas las citas del paciente actual, únicamente desde el backend.
    */
   getMyAppointments: async () => {
     try {
+      // Verificar que el usuario esté autenticado.
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('Usuario no autenticado, no se pueden pedir citas.');
+        return []; // Devolver array vacío si no hay token.
+      }
+
+      // Llamada al backend para obtener las citas.
       const response = await api.get('/appointments/me');
+      
       let backendAppointments = [];
       
-      if (response && typeof response === 'object') {
-        backendAppointments = response.data || response.content || response;
-      } else {
-        backendAppointments = response || [];
+      // Manejar la estructura de respuesta del backend (puede ser response.data o response.data.data).
+      if (response && response.data) {
+        // La respuesta puede estar en response.data o response.data.data, etc.
+        backendAppointments = Array.isArray(response.data) 
+          ? response.data 
+          : (response.data.content || response.data.data || []);
       }
       
-      // Agregar citas pendientes (rechazadas por backend pero guardadas localmente)
-      const pendingAppointments = getPendingAppointments();
+      // Asegurarse de que siempre devolvemos un array.
+      if (!Array.isArray(backendAppointments)) {
+        console.error("La respuesta de la API no contenía un array de citas:", response);
+        return [];
+      }
+
+      console.log('📋 Citas obtenidas del backend:', backendAppointments.length);
       
-      // Combinar citas reales del backend + citas pendientes locales
-      const allAppointments = [...backendAppointments, ...pendingAppointments];
+      // Enriquecer los datos de las citas con nombres de especialidades y doctores si es necesario.
+      const enrichedAppointments = await Promise.all(
+        backendAppointments.map(async (app) => {
+          const specialtyName = app.specialtyName || (app.specialtyId ? await getSpecialtyName(app.specialtyId) : 'Especialidad no especificada');
+          const doctorName = app.doctorName || (app.doctorId ? await getDoctorName(app.doctorId) : 'Doctor no especificado');
+          
+          return {
+            ...app,
+            specialtyName,
+            doctorName,
+          };
+        })
+      );
       
-      console.log('📋 Citas del backend:', backendAppointments.length);
-      console.log('💾 Citas pendientes locales:', pendingAppointments.length);
-      console.log('📊 Total de citas:', allAppointments.length);
-      
-      return allAppointments;
+      return enrichedAppointments;
     } catch (error) {
-      console.error('Error fetching appointments:', error);
-      
-      // Si hay error del backend, al menos devolver las citas locales
-      const pendingAppointments = getPendingAppointments();
-      if (pendingAppointments.length > 0) {
-        console.log('💾 Devolviendo solo citas locales por error del backend');
-        return pendingAppointments;
-      }
-      
-      throw error;
+      console.error('Error al obtener las citas del paciente:', error);
+      // En caso de error, devolver un array vacío para evitar que la UI se rompa.
+      return [];
     }
   },
 

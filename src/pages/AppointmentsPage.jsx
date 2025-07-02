@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import AppointmentList from '../components/features/appointments/AppointmentList';
 import AppointmentCalendar from '../components/features/appointments/AppointmentCalendar';
 import appointmentService from '../services/appointmentService';
+import { useAuth } from '../hooks/useAuth';
 
 // Componente para la tarjeta de cita
 const AppointmentCard = ({ appointment, onViewDetails }) => {
@@ -79,82 +80,70 @@ const AppointmentsPage = () => {
   const [appointments, setAppointments] = useState([]);
   const [view, setView] = useState('list'); // 'list' or 'calendar'
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null); // Estado para manejar errores
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'upcoming', 'past', 'cancelled'
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     const fetchAppointments = async () => {
       setIsLoading(true);
       setError(null);
+      
+      if (!isAuthenticated) {
+        setError('Debes iniciar sesión para ver tus citas');
+        setIsLoading(false);
+        return;
+      }
+      
       try {
-        // Llamada al servicio REAL para obtener las citas del usuario.
-        // `getMyAppointments` ya devuelve el array de datos, no el objeto ApiResponse completo.
+        // Obtener citas del paciente autenticado
         const appointmentsFromApi = await appointmentService.getMyAppointments();
         
-        // Verificamos si la respuesta es un array antes de mapear para evitar errores.
-        if (!Array.isArray(appointmentsFromApi)) {
-          console.error("La respuesta de la API no es un array:", appointmentsFromApi);
-          throw new Error("Formato de respuesta inesperado del servidor.");
-        }
-
-        // Adaptar la respuesta del backend al formato que el frontend espera
-        // La corrección clave: usamos la respuesta directa, no `response.data`
-        const formattedAppointments = appointmentsFromApi.map(app => {
-          let statusText = 'Desconocido';
-          switch (app.status) {
-            case 'SCHEDULED':
-              statusText = 'Agendada';
-              break;
-            case 'COMPLETED':
-              statusText = 'Completada';
-              break;
-            case 'CANCELLED':
-              statusText = 'Cancelada';
-              break;
-            case 'PENDING_VALIDATION':
-              statusText = 'Pendiente';
-              break;
-            case 'IN_PROGRESS':
-              statusText = 'En Progreso';
-              break;
-            case 'NO_SHOW':
-              statusText = 'No Asistió';
-              break;
-          }
-
-          return {
-            id: app.id,
-            specialty: app.specialtyName,
-            doctor: app.doctorName,
-            date: app.appointmentDate,
-            time: app.timeBlock, // Puedes formatear esto mejor si lo necesitas
-            status: statusText,
-            location: 'Consultorio 302' // Este dato parece estático por ahora
-          };
-        });
+        // Formatear las citas para la UI
+        const formattedAppointments = appointmentsFromApi.map(app => ({
+          id: app.id,
+          doctorId: app.doctorId,
+          doctorName: app.doctorName || 'Dr. Sin Asignar',
+          specialtyId: app.specialtyId,
+          specialtyName: app.specialtyName || 'Especialidad Sin Asignar',
+          appointmentDate: app.appointmentDate,
+          timeBlock: app.timeBlock,
+          status: app.status,
+          reason: app.reason,
+          paymentStatus: app.paymentStatus,
+          createdAt: app.createdAt
+        }));
         
         setAppointments(formattedAppointments);
       } catch (err) {
-        console.error('Error fetching appointments:', err);
-        setError('No se pudieron cargar las citas. Intente de nuevo más tarde.');
+        console.error('Error al cargar citas:', err);
+        setError('No se pudieron cargar tus citas. Por favor, intenta nuevamente más tarde.');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAppointments();
-  }, []);
+  }, [isAuthenticated]);
 
-  const handleViewDetails = (id) => {
-    console.log(`Ver detalles de la cita ${id}`);
-    // Aquí iría la navegación a la página de detalles
-  };
-
+  // Filtrar citas según el filtro seleccionado
   const filteredAppointments = appointments.filter(appointment => {
+    const status = appointment.status;
+    
     if (filter === 'all') return true;
-    if (filter === 'upcoming') return ['Confirmada', 'Pendiente'].includes(appointment.status);
-    if (filter === 'past') return appointment.status === 'Completada';
-    if (filter === 'cancelled') return appointment.status === 'Cancelada';
+    
+    if (filter === 'upcoming') {
+      return status === 'SCHEDULED' || status === 'CONFIRMED' || status === 'PENDING_VALIDATION';
+    }
+    
+    if (filter === 'past') {
+      return status === 'COMPLETED';
+    }
+    
+    if (filter === 'cancelled') {
+      return status === 'CANCELLED' || status === 'NO_SHOW';
+    }
+    
     return true;
   });
 
@@ -316,15 +305,7 @@ const AppointmentsPage = () => {
           </div>
         ) : view === 'list' ? (
           <div className="p-6">
-            <div className="space-y-4">
-              {filteredAppointments.map(appointment => (
-                  <AppointmentCard 
-                    key={appointment.id} 
-                    appointment={appointment} 
-                    onViewDetails={handleViewDetails} 
-                  />
-              ))}
-            </div>
+            <AppointmentList appointments={filteredAppointments} />
           </div>
         ) : (
           <div className="p-6">
