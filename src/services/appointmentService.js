@@ -14,7 +14,6 @@ const getSpecialtyName = async (specialtyId) => {
   }
   
   try {
-    // Intentar obtener del backend
     const response = await api.get(`/specialties/${specialtyId}`);
     const specialty = response.data || response;
     specialtyNames[specialtyId] = specialty.name || 'Especialidad Médica';
@@ -33,7 +32,6 @@ const getDoctorName = async (doctorId) => {
   }
   
   try {
-    // Intentar obtener del backend
     const response = await api.get(`/doctors/${doctorId}`);
     const doctor = response.data || response;
     doctorNames[doctorId] = `${doctor.firstName || 'Dr.'} ${doctor.lastName || 'Médico'}`;
@@ -50,7 +48,6 @@ const savePendingAppointment = async (appointmentData) => {
   try {
     const existing = JSON.parse(localStorage.getItem(PENDING_APPOINTMENTS_KEY) || '[]');
     
-    // Obtener nombres reales
     const specialtyName = await getSpecialtyName(appointmentData.specialtyId);
     const doctorName = await getDoctorName(appointmentData.doctorId);
     
@@ -65,7 +62,7 @@ const savePendingAppointment = async (appointmentData) => {
       reason: appointmentData.reason,
       status: 'SCHEDULED',
       createdAt: new Date().toISOString(),
-      isPending: true // Marca que está pendiente de guardar en backend
+      isPending: true
     };
     
     existing.push(newAppointment);
@@ -93,31 +90,26 @@ const getPendingAppointments = () => {
  */
 const appointmentService = {
   /**
-   * Obtener todas las citas del paciente actual, únicamente desde el backend.
+   * Obtener todas las citas del paciente actual
    */
   getMyAppointments: async () => {
     try {
-      // Verificar que el usuario esté autenticado.
       const token = localStorage.getItem('token');
       if (!token) {
         console.warn('Usuario no autenticado, no se pueden pedir citas.');
-        return []; // Devolver array vacío si no hay token.
+        return [];
       }
 
-      // Llamada al backend para obtener las citas.
       const response = await api.get('/appointments/me');
       
       let backendAppointments = [];
       
-      // Manejar la estructura de respuesta del backend (puede ser response.data o response.data.data).
       if (response && response.data) {
-        // La respuesta puede estar en response.data o response.data.data, etc.
         backendAppointments = Array.isArray(response.data) 
           ? response.data 
           : (response.data.content || response.data.data || []);
       }
       
-      // Asegurarse de que siempre devolvemos un array.
       if (!Array.isArray(backendAppointments)) {
         console.error("La respuesta de la API no contenía un array de citas:", response);
         return [];
@@ -125,7 +117,6 @@ const appointmentService = {
 
       console.log('📋 Citas obtenidas del backend:', backendAppointments.length);
       
-      // Enriquecer los datos de las citas con nombres de especialidades y doctores si es necesario.
       const enrichedAppointments = await Promise.all(
         backendAppointments.map(async (app) => {
           const specialtyName = app.specialtyName || (app.specialtyId ? await getSpecialtyName(app.specialtyId) : 'Especialidad no especificada');
@@ -142,7 +133,6 @@ const appointmentService = {
       return enrichedAppointments;
     } catch (error) {
       console.error('Error al obtener las citas del paciente:', error);
-      // En caso de error, devolver un array vacío para evitar que la UI se rompa.
       return [];
     }
   },
@@ -169,29 +159,19 @@ const appointmentService = {
   createAppointment: async (appointmentData) => {
     console.log('🚀 INICIANDO CREACIÓN DE CITA');
     console.log('📋 Datos que se van a enviar:', appointmentData);
-    console.log('🔍 Specialty ID:', appointmentData.specialtyId);
-    console.log('👨‍⚕️ Doctor ID:', appointmentData.doctorId);
-    console.log('📅 Fecha:', appointmentData.appointmentDate);
-    console.log('⏰ Horario:', appointmentData.timeBlock);
     
     try {
       console.log('📡 Enviando petición POST a /appointments...');
       const response = await api.post('/appointments', appointmentData);
       
-      console.log('✅ RESPUESTA EXITOSA del backend:');
-      console.log('📊 Response completo:', response);
-      console.log('💾 Data de la respuesta:', response.data);
+      console.log('✅ RESPUESTA EXITOSA del backend:', response);
       
       if (response && typeof response === 'object') {
         return response.data || response;
       }
       return response;
     } catch (error) {
-      console.log('❌ ERROR DEL BACKEND:');
-      console.log('❌ Error completo:', error);
-      console.log('📝 Mensaje de error:', error.message);
-      console.log('🔢 Status del error:', error.status);
-      console.log('📄 Response del error:', error.response);
+      console.log('❌ ERROR DEL BACKEND:', error);
       
       // Si es error de derivación médica, intentar con datos modificados
       if (error.message && (
@@ -210,26 +190,13 @@ const appointmentService = {
           bypassDerivation: true
         };
         
-        console.log('🔄 DATOS DE BYPASS:', bypassData);
-        
         try {
-          console.log('📡 Enviando petición de BYPASS...');
           const retryResponse = await api.post('/appointments', bypassData);
-          
-          console.log('✅ BYPASS EXITOSO:');
-          console.log('📊 Response del bypass:', retryResponse);
-          
           return retryResponse.data || retryResponse;
         } catch (retryError) {
-          console.log('❌ BYPASS FALLO:');
-          console.log('🔍 Error del bypass:', retryError);
-          console.log('📝 Mensaje del bypass:', retryError.message);
-          
-          // GUARDAR LOCALMENTE ya que el backend es muy estricto
-          console.log('💾 GUARDANDO CITA LOCALMENTE...');
+          console.log('❌ BYPASS FALLO - GUARDANDO LOCALMENTE...');
           const savedAppointment = await savePendingAppointment(appointmentData);
           
-          // DEVOLVER ÉXITO para que la UI funcione
           return {
             success: true,
             message: 'Cita agendada exitosamente',
@@ -242,8 +209,6 @@ const appointmentService = {
         }
       }
       
-      // Para otros errores, lanzar el error original
-      console.log('🔥 ERROR NO ES DE DERIVACIÓN - Lanzando error...');
       throw error;
     }
   },
@@ -265,7 +230,7 @@ const appointmentService = {
   },
 
   /**
-   * Obtener bloques de tiempo disponibles para un doctor en una fecha específica
+   * Obtener bloques de tiempo disponibles
    */
   getAvailableBlocks: async (doctorId, date) => {
     try {
@@ -294,7 +259,87 @@ const appointmentService = {
       console.error('Error fetching specialty availability:', error);
       throw error;
     }
+  },
+
+  /**
+   * FUNCIÓN MEJORADA PARA CREAR PREFERENCIA DE MERCADO PAGO
+   */
+  createMercadoPagoPreference: async (appointmentId, amount = null) => {
+    console.log('🚀 INICIANDO CREACIÓN DE PREFERENCIA MP');
+    console.log('📋 Parámetros:', { appointmentId, amount });
+    
+    try {
+      // Validación de parámetros
+      if (!appointmentId) {
+        throw new Error('appointmentId es requerido');
+      }
+      
+      // Construir URL con parámetros de query
+      let url = `/payments/mercadopago/create-preference?appointmentId=${appointmentId}`;
+      if (amount !== null && amount !== undefined) {
+        url += `&amount=${amount}`;
+      }
+      
+      console.log('🔗 URL completa:', url);
+      
+      // Hacer la petición POST (sin body, usando query params)
+      const response = await api.post(url);
+      
+      console.log('📥 RESPUESTA COMPLETA del backend:', response);
+      
+      // La respuesta del backend ahora es consistente: { success: true, data: "preference_id", ... }
+      // El wrapper de api ya devuelve el contenido de `data` de axios.
+      if (response && response.success && typeof response.data === 'string') {
+        const preferenceId = response.data;
+        console.log('✅ PREFERENCE ID EXTRAÍDO:', preferenceId);
+        return preferenceId;
+      } else {
+        console.error('❌ NO SE PUDO EXTRAER PREFERENCE ID');
+        console.error('📊 Response recibido:', response);
+        throw new Error('No se recibió un ID de preferencia válido del servidor');
+      }
+      
+    } catch (error) {
+      console.error('❌ ERROR EN createMercadoPagoPreference:', error);
+      console.error('📝 Mensaje:', error.message);
+      console.error('🔢 Status:', error.status);
+      console.error('📄 Response:', error.response);
+      
+      // Re-lanzar el error con información adicional
+      const enhancedError = new Error(error.message || 'Error al crear preferencia de Mercado Pago');
+      enhancedError.originalError = error;
+      enhancedError.status = error.status;
+      enhancedError.response = error.response;
+      
+      throw enhancedError;
+    }
+  },
+
+  // Función para validar configuración de Mercado Pago
+  validateMercadoPagoConfig: async () => {
+    try {
+      console.log('🔍 Validando configuración de Mercado Pago...');
+      const response = await api.get('/payments/mercadopago/validate-config');
+      console.log('✅ Configuración de Mercado Pago válida');
+      return response;
+    } catch (error) {
+      console.error('❌ Error en configuración de Mercado Pago:', error);
+      throw error;
+    }
+  },
+
+  // Función para diagnosticar problemas de Mercado Pago
+  diagnoseMercadoPago: async (appointmentId) => {
+    try {
+      console.log('🩺 Ejecutando diagnóstico de Mercado Pago...');
+      const response = await api.get(`/payments/mercadopago/diagnose/${appointmentId}`);
+      console.log('✅ Diagnóstico completado');
+      return response;
+    } catch (error) {
+      console.error('❌ Error en diagnóstico:', error);
+      throw error;
+    }
   }
 };
 
-export default appointmentService; 
+export default appointmentService;

@@ -19,6 +19,12 @@ import AppointmentsPage from './pages/AppointmentsPage';
 import CreateAppointmentPage from './pages/CreateAppointmentPage';
 import MedicalRecordsPage from './pages/MedicalRecordsPage';
 import ProfilePage from './pages/ProfilePage';
+import PaymentStatusPage from './pages/PaymentStatusPage';
+
+// Payment Pages
+import PaymentSuccess from './pages/payment/PaymentSuccess';
+import PaymentFailure from './pages/payment/PaymentFailure';
+import PaymentPending from './pages/payment/PaymentPending';
 
 function App() {
   return (
@@ -44,6 +50,14 @@ function App() {
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
+
+          {/* Payment Status Route */}
+          <Route path="/payment/:status" element={<PaymentStatusPage />} />
+          
+          {/* Mercado Pago Return Routes */}
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/failure" element={<PaymentFailure />} />
+          <Route path="/payment/pending" element={<PaymentPending />} />
 
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />

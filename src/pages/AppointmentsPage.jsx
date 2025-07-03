@@ -4,26 +4,25 @@ import AppointmentList from '../components/features/appointments/AppointmentList
 import AppointmentCalendar from '../components/features/appointments/AppointmentCalendar';
 import appointmentService from '../services/appointmentService';
 import { useAuth } from '../hooks/useAuth';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import Modal from '../components/ui/Modal';
+import MercadoPagoCheckout from '../components/features/payments/MercadoPagoCheckout';
 
 // Componente para la tarjeta de cita
-const AppointmentCard = ({ appointment, onViewDetails }) => {
+const AppointmentCard = ({ appointment, onPayClick }) => {
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Confirmada':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'Pendiente':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Cancelada':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'Completada':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'SCHEDULED': return 'bg-green-100 text-green-800 border-green-200';
+      case 'PENDING_VALIDATION': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'CANCELLED': return 'bg-red-100 text-red-800 border-red-200';
+      case 'COMPLETED': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+    <Card>
       <div className="p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -38,8 +37,11 @@ const AppointmentCard = ({ appointment, onViewDetails }) => {
               </svg>
             </div>
             <div className="ml-4">
-              <h4 className="text-sm font-medium text-gray-900">{appointment.specialty}</h4>
-              <p className="text-xs text-gray-500">Dr. {appointment.doctor}</p>
+              <h4 className="text-sm font-medium text-gray-900">{appointment.specialtyName}</h4>
+              <p className="text-xs text-gray-500">Dr. {appointment.doctorName}</p>
+              {appointment.price && (
+                <p className="text-xs text-green-600 font-medium">S/. {appointment.price}</p>
+              )}
             </div>
           </div>
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
@@ -51,28 +53,41 @@ const AppointmentCard = ({ appointment, onViewDetails }) => {
             <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            {appointment.date}
+            {appointment.appointmentDate}
           </div>
           <div className="flex items-center text-sm text-gray-500">
             <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            {appointment.time}
+            {appointment.timeBlock}
           </div>
         </div>
         <div className="mt-4 flex justify-between">
           <div className="text-xs text-gray-500">
             {appointment.location}
           </div>
-          <button 
-            onClick={() => onViewDetails(appointment.id)} 
-            className="text-sm font-medium text-[#0066CC] hover:text-[#0066CC]/80"
-          >
-            Ver detalles
-          </button>
+          <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end items-center space-x-3">
+            {appointment.status === 'PENDING_VALIDATION' && (
+              <Button 
+                onClick={() => onPayClick(appointment)}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white text-sm"
+                size="sm"
+              >
+                Pagar Ahora
+              </Button>
+            )}
+            <Button 
+              onClick={() => alert(`Detalles de la cita ${appointment.id}`)} 
+              variant="outline"
+              size="sm"
+              className="text-sm"
+            >
+              Ver detalles
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
@@ -83,6 +98,14 @@ const AppointmentsPage = () => {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'upcoming', 'past', 'cancelled'
   const { isAuthenticated, user } = useAuth();
+
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+
+  const handlePayClick = (appointment) => {
+    setSelectedAppointment(appointment);
+    setPaymentModalOpen(true);
+  };
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -111,7 +134,14 @@ const AppointmentsPage = () => {
           status: app.status,
           reason: app.reason,
           paymentStatus: app.paymentStatus,
-          createdAt: app.createdAt
+          createdAt: app.createdAt,
+          price: app.price, // Añadimos el precio si existe
+          // Creamos la estructura adecuada para specialty que espera MercadoPagoCheckout
+          specialty: {
+            id: app.specialtyId,
+            name: app.specialtyName || 'Especialidad Sin Asignar',
+            consultationPrice: app.price // Usamos el precio de la cita
+          }
         }));
         
         setAppointments(formattedAppointments);
@@ -304,15 +334,37 @@ const AppointmentsPage = () => {
             </div>
           </div>
         ) : view === 'list' ? (
-          <div className="p-6">
-            <AppointmentList appointments={filteredAppointments} />
+          <div className="p-4 grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {filteredAppointments.length > 0 ? (
+              filteredAppointments.map(app => (
+                <AppointmentCard key={app.id} appointment={app} onPayClick={handlePayClick} />
+              ))
+            ) : (
+              <p className="col-span-full text-center text-gray-500 py-12">No tienes citas con este filtro.</p>
+            )}
           </div>
         ) : (
-          <div className="p-6">
+          <div className="p-4">
             <AppointmentCalendar appointments={filteredAppointments} />
           </div>
         )}
       </div>
+
+      {selectedAppointment && (
+        <Modal
+          isOpen={paymentModalOpen}
+          onClose={() => setPaymentModalOpen(false)}
+          title={`Pagar Cita #${selectedAppointment.id}`}
+        >
+          <MercadoPagoCheckout
+            appointment={selectedAppointment}
+            onPaymentSuccess={() => {
+              setPaymentModalOpen(false);
+              // Podríamos refrescar la lista de citas aquí
+            }}
+          />
+        </Modal>
+      )}
     </div>
   );
 };

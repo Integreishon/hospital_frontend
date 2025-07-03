@@ -6,6 +6,7 @@ import Alert from '../../ui/Alert';
 import SpecialtySelector from './SpecialtySelector';
 import DoctorSelector from './DoctorSelector';
 import AppointmentCalendar from './AppointmentCalendar';
+import MercadoPagoCheckout from '../payments/MercadoPagoCheckout';
 import useAuth from '../../../hooks/useAuth';
 import appointmentService from '../../../services/appointmentService';
 
@@ -25,6 +26,8 @@ export default function CreateAppointmentForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [createdAppointment, setCreatedAppointment] = useState(null);
+  const [showPayment, setShowPayment] = useState(false);
 
   // Validar si el usuario está autenticado y es un paciente
   useEffect(() => {
@@ -94,7 +97,6 @@ export default function CreateAppointmentForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validación final
     if (!formData.reason.trim()) {
       setError('Por favor, ingrese el motivo de la consulta');
       return;
@@ -104,7 +106,6 @@ export default function CreateAppointmentForm() {
       setLoading(true);
       setError(null);
       
-      // Preparar datos para enviar al backend
       const appointmentData = {
         specialtyId: formData.specialtyId,
         doctorId: formData.doctorId,
@@ -113,10 +114,9 @@ export default function CreateAppointmentForm() {
         reason: formData.reason
       };
       
-      // Llamar al servicio para crear la cita
       const response = await appointmentService.createAppointment(appointmentData);
       
-      // Mostrar mensaje de éxito
+      setCreatedAppointment(response.data);
       setSuccess(true);
       
     } catch (err) {
@@ -141,7 +141,6 @@ export default function CreateAppointmentForm() {
     }
   };
 
-  // Si la cita se creó exitosamente
   if (success) {
     return (
       <div className="text-center">
@@ -155,31 +154,52 @@ export default function CreateAppointmentForm() {
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto -mt-12 relative">
-          <p className="text-gray-600 mb-8">
-            Recibirás un correo con la confirmación y los detalles. Recuerda que también podrás verla en la sección Mis citas.
-          </p>
-
-          <div className="border-t border-gray-200 pt-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">¡Ahorra tiempo!</h3>
-        <p className="text-gray-600 mb-6">
-              Paga tu cita usando la APP y pasa directo al consultorio
-            </p>
-            <div className="flex justify-center space-x-4">
-              <Button 
-                onClick={() => alert('Funcionalidad de pago pendiente de implementación')}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+          
+          {showPayment ? (
+            <div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">Completa tu pago</h3>
+              <MercadoPagoCheckout 
+                appointment={createdAppointment}
+                onPaymentSuccess={() => navigate('/appointments')} 
+              />
+               <Button 
+                onClick={() => setShowPayment(false)}
+                variant="link"
+                className="mt-4 text-gray-600"
               >
-                PAGAR CITA
+                Pagar más tarde
               </Button>
-              <Button 
-                onClick={() => navigate('/appointments')}
-                variant="outline"
-                className="text-emerald-500 border-emerald-500 hover:bg-emerald-50"
-              >
-                VER EN MIS CITAS
-        </Button>
             </div>
-          </div>
+          ) : (
+            <>
+              <p className="text-gray-600 mb-8">
+                El siguiente paso es realizar el pago para confirmar tu cita. También puedes pagar más tarde desde la sección "Mis Citas".
+              </p>
+
+              <div className="border-t border-gray-200 pt-8">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">¡Confirma tu cita ahora!</h3>
+                <p className="text-gray-600 mb-6">
+                  Paga tu cita usando un método de pago seguro y confiable.
+                </p>
+                <div className="flex justify-center space-x-4">
+                  <Button 
+                    onClick={() => setShowPayment(true)}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                  >
+                    PAGAR CITA AHORA
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/appointments')}
+                    variant="outline"
+                    className="text-emerald-500 border-emerald-500 hover:bg-emerald-50"
+                  >
+                    VER EN MIS CITAS
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+
         </div>
       </div>
     );
