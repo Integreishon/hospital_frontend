@@ -7,6 +7,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [expandedSection, setExpandedSection] = useState(null);
+  const [patientName, setPatientName] = useState('Usuario');
 
   // Auto-expandir la sección activa según la ruta actual
   useEffect(() => {
@@ -19,6 +20,52 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       setExpandedSection(activeSection.id);
     }
   }, [location.pathname]);
+  
+  // Cargar datos del paciente si es necesario
+  useEffect(() => {
+    // Función para cargar datos del paciente
+    const loadPatientData = async () => {
+      if (user?.role === 'PATIENT') {
+        try {
+          // Si no tenemos los datos completos del paciente, intentar cargarlos
+          if (!user.firstName || !user.lastName) {
+            const userService = await import('../../services/userService').then(m => m.default);
+            const patientData = await userService.getCurrentPatient();
+            
+            if (patientData) {
+              // Construir nombre completo del paciente
+              if (patientData.firstName && patientData.lastName) {
+                setPatientName(`${patientData.firstName} ${patientData.lastName}`);
+              } else if (patientData.fullName) {
+                setPatientName(patientData.fullName);
+              }
+              
+              return;
+            }
+          } else {
+            // Ya tenemos firstName y lastName, usar estos
+            setPatientName(`${user.firstName} ${user.lastName}`);
+            return;
+          }
+        } catch (error) {
+          console.error("❌ Sidebar: Error cargando datos del paciente:", error);
+        }
+      }
+      
+      // Si no pudimos cargar datos o hubo un error, usar el mejor dato disponible
+      if (user?.nombre && user?.apellidoPaterno) {
+        setPatientName(`${user.nombre} ${user.apellidoPaterno}`);
+      } else if (user?.name) {
+        setPatientName(user.name);
+      } else if (user?.email) {
+        setPatientName(user.email);
+      } else {
+        setPatientName('Usuario');
+      }
+    };
+    
+    loadPatientData();
+  }, [user]);
 
   const toggleSection = (section) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -159,7 +206,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </div>
           {isOpen && (
             <div className="ml-3 overflow-hidden">
-              <p className="text-sm font-medium text-gray-800">{user?.name || 'Usuario'}</p>
+              <p className="text-sm font-medium text-gray-800">
+                {patientName}
+              </p>
               <div className="flex items-center mt-1">
                 <span className="h-2 w-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
                 <p className="text-xs font-medium text-[#0066CC] truncate">Paciente</p>

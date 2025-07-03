@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { authService } from '../services/authService';
 import api from '../services/api';
+import userService from '../services/userService';
 
 export const AuthContext = createContext(null);
 
@@ -17,38 +18,51 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // Función para cargar datos completos del paciente
+  const loadFullUserData = async (basicUser) => {
+    if (basicUser && basicUser.role === 'PATIENT') {
+      try {
+        const fullProfile = await userService.getCurrentUserProfile();
+        return fullProfile;
+      } catch (err) {
+        console.error("⚠️ No se pudo cargar el perfil completo del paciente, se usarán los datos básicos.", err);
+        // Devolver el usuario básico con campos normalizados para evitar errores
+        return {
+          ...basicUser,
+          fullName: `${basicUser.nombre || ''} ${basicUser.apellidoPaterno || ''}`.trim() || basicUser.email
+        };
+      }
+    }
+    return basicUser;
+  };
+  
   useEffect(() => {
     const validateToken = async () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          // Intentar cargar usuario desde localStorage primero
-          const storedUser = localStorage.getItem('user');
+          const storedUser = JSON.parse(localStorage.getItem('user'));
           if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            // Cargar con datos de localStorage para una carga inicial rápida
+             setUser(storedUser);
           }
           
-          // Validar token con el backend
-          try {
-            // The backend has a /auth/validate endpoint
-            const response = await api.get('/auth/validate');
-            if (response.data && response.data.valid) {
-              setUser(response.data.user);
-            } else {
-              authService.logout();
-              setUser(null);
-            }
-          } catch (err) {
-            console.error("Error validando token:", err);
-            // Si falla la validación pero tenemos usuario en localStorage,
-            // mantenemos la sesión para mejorar UX (se validará en próximas peticiones)
-            if (!storedUser) {
-              authService.logout();
-              setUser(null);
-            }
+          // Validar y refrescar datos desde el backend
+          const response = await api.get('/auth/validate');
+          if (response.data && response.data.valid) {
+            const userFromServer = response.data.user;
+            const fullUser = await loadFullUserData(userFromServer);
+            setUser(fullUser);
+            localStorage.setItem('user', JSON.stringify(fullUser)); // Actualizar localStorage
+          } else {
+            // Token inválido
+            authService.logout();
+            setUser(null);
           }
         } catch (err) {
-          console.error("Error general en validación:", err);
+          console.error("Error validando token o cargando datos de usuario:", err);
+          // Si la validación falla, podría ser un problema de red o token expirado.
+          // Cerramos la sesión por seguridad.
           authService.logout();
           setUser(null);
         }
@@ -63,9 +77,12 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
     setError(null);
     try {
-      // The authService.login function now returns an object with { token, user }
       const { user: loggedInUser } = await authService.login(dni, password);
-      setUser(loggedInUser); // The user object is already shaped correctly
+      
+      const fullUser = await loadFullUserData(loggedInUser);
+      setUser(fullUser);
+      // No es necesario guardar en localStorage aquí porque loadFullUserData ya lo hace.
+      
       return true;
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Error en el inicio de sesión.';

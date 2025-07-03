@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import LandingNavbar from './LandingNavbar';
 import LandingFooter from './LandingFooter';
+import FloatingActionButtons from './FloatingActionButtons';
 
 const LandingLayout = () => {
   return (
@@ -11,6 +12,7 @@ const LandingLayout = () => {
         <Outlet />
       </main>
       <LandingFooter />
+      <FloatingActionButtons />
     </div>
   );
 };

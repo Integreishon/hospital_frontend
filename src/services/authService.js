@@ -33,11 +33,56 @@ export const authService = {
       // The backend response is wrapped in our standard ApiResponse format.
       // The actual data (AuthResponse) is in the `data` property.
       if (response && response.data) {
-        const { token, id, nombre, apellidoPaterno, role } = response.data;
+        const { token, id, nombre, apellidoPaterno, role, email } = response.data;
         
         // Store token and user info in localStorage
         localStorage.setItem('token', token);
-        const userToStore = { id, nombre, apellidoPaterno, role };
+        
+        // Crear objeto de usuario con todos los campos disponibles
+        const userToStore = { 
+          id, 
+          nombre, 
+          apellidoPaterno,
+          role,
+          email: email || dni + '@example.com', // Usar email o crear uno basado en DNI temporalmente
+        };
+        
+        // Para pacientes, agregar campos adicionales para conveniencia
+        if (role === 'PATIENT') {
+          userToStore.firstName = nombre;
+          userToStore.lastName = apellidoPaterno;
+          userToStore.fullName = `${nombre || ''} ${apellidoPaterno || ''}`.trim();
+          
+          // Guardar DNI para posibles consultas posteriores
+          userToStore.dni = dni;
+          
+          console.log('🔍 Intentando obtener datos adicionales del paciente con userId:', id);
+          
+          try {
+            // Intentar obtener datos completos del paciente inmediatamente
+            const patientResponse = await api.get(`/patients/byUserId/${id}`);
+            if (patientResponse && patientResponse.data) {
+              console.log('✅ Datos del paciente obtenidos durante login:', patientResponse.data);
+              
+              // Guardar datos del paciente en el objeto de usuario
+              userToStore.patientData = patientResponse.data;
+              
+              // Actualizar firstName y lastName si están disponibles en los datos del paciente
+              if (patientResponse.data.firstName) {
+                userToStore.firstName = patientResponse.data.firstName;
+              }
+              if (patientResponse.data.lastName) {
+                userToStore.lastName = patientResponse.data.lastName;
+              }
+              if (patientResponse.data.firstName && patientResponse.data.lastName) {
+                userToStore.fullName = `${patientResponse.data.firstName} ${patientResponse.data.lastName}`;
+              }
+            }
+          } catch (patientError) {
+            console.warn('⚠️ No se pudieron obtener datos del paciente durante login:', patientError);
+          }
+        }
+        
         localStorage.setItem('user', JSON.stringify(userToStore));
         
         // Return the user data to be used in the AuthContext

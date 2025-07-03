@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import appointmentService from '../services/appointmentService';
 
 // Welcome Card Component
-const WelcomeCard = ({ user, nextAppointment }) => (
+const WelcomeCard = ({ userName, nextAppointment }) => (
   <div className="relative overflow-hidden bg-gradient-to-r from-[#0066CC] to-[#1a85ff] rounded-2xl shadow-lg">
     <div className="absolute inset-0">
       <svg className="absolute right-0 top-0 h-full w-1/2 transform translate-x-1/3 -translate-y-1/8 text-white opacity-10" fill="none" viewBox="0 0 200 200">
@@ -15,7 +15,7 @@ const WelcomeCard = ({ user, nextAppointment }) => (
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-xl font-bold text-white sm:text-2xl">
-            Bienvenido{user?.gender === 'F' ? 'a' : 'o'}, {user?.name || 'Usuario'}
+            Bienvenido, {userName || 'Usuario'}
           </h2>
           <p className="mt-1 text-sm text-white/80">
             {nextAppointment ? (
@@ -433,6 +433,66 @@ function DashboardPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [nextAppointment, setNextAppointment] = useState(null);
+  const [patientName, setPatientName] = useState('Usuario');
+
+  useEffect(() => {
+    // Función para cargar datos del paciente si es necesario
+    const loadPatientData = async () => {
+      if (user?.role === 'PATIENT') {
+        try {
+          // Intentar obtener datos adicionales del paciente si no están ya disponibles
+          if (!user.patientData && !user.firstName) {
+            const userService = await import('../services/userService').then(m => m.default);
+            const patientData = await userService.getCurrentPatient();
+            
+            if (patientData) {
+              // Construir nombre completo del paciente
+              let completeName = 'Usuario';
+              
+              if (patientData.firstName && patientData.lastName) {
+                completeName = `${patientData.firstName} ${patientData.lastName}`;
+              } else if (patientData.fullName) {
+                completeName = patientData.fullName;
+              } else if (user.nombre && user.apellidoPaterno) {
+                completeName = `${user.nombre} ${user.apellidoPaterno}`;
+              }
+              
+              setPatientName(completeName);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("❌ Error cargando datos del paciente:", error);
+        }
+      }
+      
+      // Si no pudimos cargar datos adicionales o hubo un error, usar lo que tengamos
+      let nameFallback = 'Usuario';
+      
+      // Si tenemos nombre/apellido del login
+      if (user?.nombre && user?.apellidoPaterno) {
+        nameFallback = `${user.nombre} ${user.apellidoPaterno}`;
+      }
+      // Nueva forma: usando campos directos del usuario enriquecido
+      else if (user?.firstName && user?.lastName) {
+        nameFallback = `${user.firstName} ${user.lastName}`;
+      } else if (user?.fullName) {
+        nameFallback = user.fullName;
+      } 
+      // Usando campo patientData que se carga desde el servicio
+      else if (user?.patientData) {
+        if (user.patientData.firstName && user.patientData.lastName) {
+          nameFallback = `${user.patientData.firstName} ${user.patientData.lastName}`;
+        } else if (user.patientData.fullName) {
+          nameFallback = user.patientData.fullName;
+        }
+      }
+      
+      setPatientName(nameFallback);
+    };
+    
+    loadPatientData();
+  }, [user]);
 
   useEffect(() => {
     const fetchNextAppointment = async () => {
@@ -504,16 +564,9 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Card */}
-      <WelcomeCard user={user} nextAppointment={nextAppointment} />
-      
-      <div className="grid grid-cols-1 gap-6">
-        {/* Quick Actions */}
-        <QuickActions />
-        
-        {/* Upcoming Appointments */}
-        <UpcomingAppointments />
-      </div>
+      <WelcomeCard userName={patientName} nextAppointment={nextAppointment} />
+      <QuickActions />
+      <UpcomingAppointments />
     </div>
   );
 }

@@ -47,9 +47,9 @@ const MedicalRecordsPage = () => {
         </h1>
         <p className="text-gray-500 mt-2">
           Aquí encontrarás un registro detallado de todas tus consultas médicas.
-        </p>
+          </p>
       </header>
-      
+
       {/* Main Content Area */}
       <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
         {/* Toolbar: Search and Export */}
