@@ -57,7 +57,7 @@ const LoginForm = () => {
       <form onSubmit={handleSubmit} className="space-y-7">
         <div>
           <label htmlFor="dni" className="block text-sm font-medium text-gray-700 mb-2 font-montserrat">
-            Login*
+            DNI:
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -74,14 +74,15 @@ const LoginForm = () => {
               value={dni}
               onChange={(e) => setDni(e.target.value)}
               className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#043464] focus:ring-2 focus:ring-[#043464]/20 transition-all duration-200 text-gray-900 placeholder:text-gray-400 font-montserrat"
-              placeholder="Ingresa tu email"
+              placeholder="Ingresa tu DNI"
+              maxLength="8"
             />
           </div>
         </div>
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2 font-montserrat">
-            Contraseña*
+            Contraseña:
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

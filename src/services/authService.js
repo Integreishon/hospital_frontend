@@ -55,6 +55,23 @@ export const authService = {
   },
 
   /**
+   * Verifica si un DNI ya existe en el sistema
+   * @param {string} dni - El DNI a verificar
+   * @returns {Promise<boolean>} - True si el DNI ya existe, false en caso contrario
+   */
+  async checkDniExists(dni) {
+    try {
+      const response = await api.get(`/patients/check-dni/${dni}`);
+      return response.data.exists;
+    } catch (error) {
+      console.error('Error al verificar DNI:', error);
+      // Si hay un error en la petición, asumimos que no existe
+      // para evitar bloquear el registro
+      return false;
+    }
+  },
+
+  /**
    * Logs out the current user.
    */
   async logout() {
