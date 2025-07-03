@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
-import Button from '../../ui/Button';
 
 const LoginForm = () => {
   const [dni, setDni] = useState('');
@@ -39,9 +38,9 @@ const LoginForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 animate-fade-in">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -49,100 +48,86 @@ const LoginForm = () => {
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-red-700 font-montserrat">{error}</p>
             </div>
           </div>
         </div>
       )}
 
-      <div>
-        <label htmlFor="dni" className="block text-sm font-medium text-gray-700 mb-1">
-          DNI
+      <form onSubmit={handleSubmit} className="space-y-7">
+        <div>
+          <label htmlFor="dni" className="block text-sm font-medium text-gray-700 mb-2 font-montserrat">
+            Login*
           </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <input
+              id="dni"
+              name="dni"
+              type="text"
+              autoComplete="username"
+              required
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
+              className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#043464] focus:ring-2 focus:ring-[#043464]/20 transition-all duration-200 text-gray-900 placeholder:text-gray-400 font-montserrat"
+              placeholder="Ingresa tu email"
+            />
           </div>
-          <input
-            id="dni"
-            name="dni"
-            type="text"
-            autoComplete="username"
-            required
-            value={dni}
-            onChange={(e) => setDni(e.target.value)}
-            className="pl-10 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-gray-900 py-3"
-            placeholder="Ingresa tu DNI"
-          />
         </div>
-      </div>
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Contraseña
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2 font-montserrat">
+            Contraseña*
           </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#043464] focus:ring-2 focus:ring-[#043464]/20 transition-all duration-200 text-gray-900 placeholder:text-gray-400 font-montserrat"
+              placeholder="Ingresa tu contraseña"
+            />
           </div>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="pl-10 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 text-gray-900 py-3"
-            placeholder="Ingresa tu contraseña"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <input
-            id="remember-me"
-            name="remember-me"
-            type="checkbox"
-            className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-          />
-          <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-            Recordarme
-          </label>
         </div>
 
-        <div className="text-sm">
-          <a href="#" className="font-medium text-emerald-600 hover:text-emerald-500">
+        <div className="text-right">
+          <a href="#" className="text-sm text-[#043464] hover:text-[#032a52] font-medium transition-colors font-montserrat hover:underline underline-offset-4">
             ¿Olvidaste tu contraseña?
           </a>
         </div>
-      </div>
 
-      <div>
-        <Button
+        <button
           type="submit"
-          className="w-full flex justify-center py-3 px-4"
           disabled={isLoading}
+          className="w-full bg-[#043464] hover:bg-[#032a52] text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:transform-none shadow-lg hover:shadow-xl font-montserrat"
         >
           {isLoading ? (
-            <>
+            <div className="flex items-center justify-center">
               <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Iniciando sesión...
-            </>
+              <span className="font-montserrat">Iniciando sesión...</span>
+            </div>
           ) : (
-            'Iniciar Sesión'
+            <span className="font-montserrat">Iniciar sesión</span>
           )}
-        </Button>
-      </div>
-    </form>
+        </button>
+      </form>
+    </div>
   );
 };
 

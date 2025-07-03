@@ -30,11 +30,9 @@ function App() {
             <Route path="/" element={<LandingPage />} />
           </Route>
 
-          {/* Public Routes */}
-          <Route element={<PublicLayout />}>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-          </Route>
+          {/* Auth Routes - No Layout */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>

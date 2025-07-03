@@ -56,7 +56,7 @@ const Navbar = () => {
                     ? 'text-emerald-600'
                     : 'text-white'
                 }`}>
-                  Urovital
+                  Portal
                 </span>
               </Link>
             </div>
@@ -66,9 +66,7 @@ const Navbar = () => {
               <Link to="/appointments" className={linkClasses}>
                 Citas
               </Link>
-              <Link to="/medical-records" className={linkClasses}>
-                Historial Médico
-              </Link>
+              
               {!isAuthenticated ? (
                 <>
                   <Link
@@ -157,7 +155,7 @@ const Navbar = () => {
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
               <span className="text-xl font-bold text-emerald-600">
-                Urovital
+                Portal
               </span>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}

@@ -1,77 +1,101 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import RegisterForm from '../components/features/auth/RegisterForm';
 
 const RegisterPage = () => {
+  const navigate = useNavigate();
+  
+  const handleBack = () => {
+    navigate('/');
+  };
+  
   return (
-    <div className="flex h-screen">
-      {/* Left Side - Form */}
-      <div className="w-full lg:w-[45%] xl:w-[40%] bg-white flex flex-col justify-between p-6 lg:p-12">
-        <div>
-          {/* Logo */}
-          <div className="flex items-center mb-8">
-            <div className="h-8 w-8 rounded-lg bg-emerald-600 flex items-center justify-center">
-              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+    <div className="min-h-screen flex overflow-hidden">
+      {/* Background with single image - Full screen */}
+      <div className="absolute inset-0">
+        {/* Single background image */}
+        <div 
+          className="h-full w-full bg-no-repeat bg-cover bg-center" 
+          style={{
+            backgroundImage: 'url(https://images.unsplash.com/photo-1685997179880-6449203a053e)'
+          }}
+        ></div>
+        
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/50"></div>
+        
+        {/* Logo rwv in bottom left */}
+        <div className="absolute bottom-8 left-8 z-20">
+          <div className="flex items-center text-white">
+            <div className="w-8 h-8 bg-[#043464] rounded-full flex items-center justify-center mr-3">
+              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 7v10c0 5.55 3.84 9.739 9 11 5.16-1.261 9-5.45 9-11V7l-10-5z"/>
               </svg>
             </div>
-            <span className="ml-3 text-lg font-bold text-gray-900">Portal Médico</span>
+            <span className="text-xl font-bold font-montserrat">Hospital</span>
           </div>
-
-          {/* Welcome Text */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Crear cuenta</h1>
-            <p className="text-base text-gray-600">
-              Completa el formulario para comenzar tu experiencia con nosotros.
-            </p>
-          </div>
-
-          {/* Register Form */}
-          <RegisterForm />
-
-          {/* Login Link */}
-          <div className="mt-4">
-            <p className="text-gray-600 text-sm">
-              ¿Ya tienes una cuenta?{' '}
-              <Link to="/login" className="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors">
-                Inicia sesión
-              </Link>
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-xs text-gray-500">
-          <p>
-            Al registrarte, aceptas nuestros{' '}
-            <a href="#" className="text-emerald-600 hover:text-emerald-500 transition-colors">
-              Términos y Condiciones
-            </a>
-          </p>
         </div>
       </div>
 
-      {/* Right Side - Image */}
-      <div className="hidden lg:block lg:w-[55%] xl:w-[60%] relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-700/95 to-emerald-900/95"></div>
-        <img 
-          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay" 
-          src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop" 
-          alt="Healthcare background" 
-        />
-        <div className="relative h-full flex flex-col items-start justify-center p-12 text-white">
-          <div className="max-w-2xl">
-            <span className="inline-block px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-sm font-medium mb-4">
-              ✨ Únete a nuestra comunidad médica
-            </span>
-            <h2 className="text-3xl font-bold mb-4">Tu salud, nuestra prioridad</h2>
-            <p className="text-lg text-white/90">
-              Accede a todos nuestros servicios médicos y gestiona tus citas de forma sencilla.
-            </p>
+      {/* Content - Register Card positioned to the right */}
+      <div className="relative z-10 w-full h-full flex items-center justify-center md:justify-end p-4 sm:p-6 md:p-8 lg:p-10 overflow-y-auto">
+        {/* Register Card Container with max height */}
+        <div className="w-full max-w-md my-auto">
+          {/* Back Button */}
+          <button 
+            onClick={handleBack}
+            className="flex items-center text-white/80 hover:text-white mb-4 transition-colors"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span className="font-montserrat">Atrás</span>
+          </button>
+
+          {/* Register Form Card with scrollable content if needed */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 sm:p-8 shadow-card hover:shadow-card-hover transition-shadow duration-300 border border-white/20 animate-fade-in max-h-[80vh] overflow-y-auto">
+            <RegisterFormWithStepIndicator />
           </div>
         </div>
       </div>
     </div>
+  );
+};
+
+// Componente envoltorio para manejar el indicador de pasos
+const RegisterFormWithStepIndicator = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Función para actualizar el paso actual desde el formulario hijo
+  const updateStep = (step) => {
+    setCurrentStep(step);
+  };
+  
+  return (
+    <>
+      {/* Step indicator */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm text-gray-500 font-montserrat tracking-wide">Paso {currentStep} de 2</p>
+          <div className="flex items-center">
+            <div className={`h-1.5 w-8 rounded-full ${currentStep === 1 ? 'bg-[#043464]' : 'bg-gray-300'} mr-2`}></div>
+            <div className={`h-1.5 w-8 rounded-full ${currentStep === 2 ? 'bg-[#043464]' : 'bg-gray-300'}`}></div>
+          </div>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#043464] font-montserrat tracking-tight">
+          Registrarse
+        </h1>
+        <p className="text-gray-600 mt-2 font-montserrat">
+          ¿Ya tienes una cuenta?{' '}
+          <Link to="/login" className="text-[#043464] hover:text-[#032a52] font-medium transition-colors underline-offset-4 hover:underline">
+            Iniciar sesión
+          </Link>
+        </p>
+      </div>
+
+      {/* Form */}
+      <RegisterForm onStepChange={updateStep} />
+    </>
   );
 };
 
