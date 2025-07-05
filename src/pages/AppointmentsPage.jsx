@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AppointmentList from '../components/features/appointments/AppointmentList';
 import AppointmentCalendar from '../components/features/appointments/AppointmentCalendar';
 import appointmentService from '../services/appointmentService';
@@ -11,6 +11,8 @@ import MercadoPagoCheckout from '../components/features/payments/MercadoPagoChec
 
 // Componente para la tarjeta de cita
 const AppointmentCard = ({ appointment, onPayClick }) => {
+  const navigate = useNavigate();
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'SCHEDULED': return 'bg-green-100 text-green-800 border-green-200';
@@ -77,7 +79,7 @@ const AppointmentCard = ({ appointment, onPayClick }) => {
               </Button>
             )}
             <Button 
-              onClick={() => alert(`Detalles de la cita ${appointment.id}`)} 
+              onClick={() => navigate(`/appointments/${appointment.id}`)} 
               variant="outline"
               size="sm"
               className="text-sm"

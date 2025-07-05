@@ -17,15 +17,22 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(false);
   
   // Función para cargar datos completos del paciente
   const loadFullUserData = async (basicUser) => {
+    if (!basicUser) {
+      return null;
+    }
+    
     if (basicUser && basicUser.role === 'PATIENT') {
       try {
         const fullProfile = await userService.getCurrentUserProfile();
         return fullProfile;
       } catch (err) {
-        console.error("⚠️ No se pudo cargar el perfil completo del paciente, se usarán los datos básicos.", err);
+        // Usar console.debug para mensajes informativos, no alarmantes
+        console.debug("⚠️ No se pudo cargar el perfil completo del paciente, se usarán los datos básicos.");
         // Devolver el usuario básico con campos normalizados para evitar errores
         return {
           ...basicUser,
@@ -37,40 +44,65 @@ export const AuthProvider = ({ children }) => {
   };
   
   useEffect(() => {
+    let isMounted = true;
+    
     const validateToken = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const storedUser = JSON.parse(localStorage.getItem('user'));
-          if (storedUser) {
-            // Cargar con datos de localStorage para una carga inicial rápida
-             setUser(storedUser);
-          }
-          
-          // Validar y refrescar datos desde el backend
-          const response = await api.get('/auth/validate');
-          if (response.data && response.data.valid) {
+      
+      if (!token) {
+        if (isMounted) {
+          setUser(null);
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          setAuthInitialized(true);
+        }
+        return;
+      }
+      
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        if (storedUser && isMounted) {
+          setUser(storedUser);
+          setIsAuthenticated(true);
+        }
+        
+        // El interceptor de API ya maneja la validación y el refresco.
+        // Aquí solo necesitamos verificar si la sesión sigue activa.
+        const response = await api.get('/auth/validate');
+        
+        if (isMounted) {
+          // La respuesta de validación puede ser tan simple como un 200 OK.
+          // La clave es que si la llamada falla (interceptada por 401), el logout se activará.
+          // Si tiene éxito, refrescamos los datos del usuario.
+          if (response && response.data && response.data.user) {
             const userFromServer = response.data.user;
             const fullUser = await loadFullUserData(userFromServer);
             setUser(fullUser);
-            localStorage.setItem('user', JSON.stringify(fullUser)); // Actualizar localStorage
-          } else {
-            // Token inválido
-            authService.logout();
-            setUser(null);
+            setIsAuthenticated(true);
+            localStorage.setItem('user', JSON.stringify(fullUser));
           }
-        } catch (err) {
-          console.error("Error validando token o cargando datos de usuario:", err);
-          // Si la validación falla, podría ser un problema de red o token expirado.
-          // Cerramos la sesión por seguridad.
-          authService.logout();
-          setUser(null);
+          setIsLoading(false);
+          setAuthInitialized(true);
+        }
+      } catch (err) {
+        // El interceptor de API debería manejar los 401 y redirigir.
+        // Este catch es para otros errores de red o del servidor.
+        console.error("Error al validar la sesión:", err.message);
+        if (isMounted) {
+          // No necesariamente cerramos sesión, podría ser un error de red temporal.
+          // Mantenemos al usuario logueado con los datos de localStorage.
+          // La próxima acción que requiera API re-validará.
+          setIsLoading(false);
+          setAuthInitialized(true);
         }
       }
-      setIsLoading(false);
     };
 
     validateToken();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (dni, password) => {
@@ -81,7 +113,7 @@ export const AuthProvider = ({ children }) => {
       
       const fullUser = await loadFullUserData(loggedInUser);
       setUser(fullUser);
-      // No es necesario guardar en localStorage aquí porque loadFullUserData ya lo hace.
+      setIsAuthenticated(true);
       
       return true;
     } catch (err) {
@@ -103,6 +135,7 @@ export const AuthProvider = ({ children }) => {
         email: response.email,
         role: response.role,
       });
+      setIsAuthenticated(true);
       return true;
     } catch (err) {
       setError(err.message || 'Failed to register');
@@ -116,6 +149,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Primero limpiamos el estado
       setUser(null);
+      setIsAuthenticated(false);
       
       // Luego llamamos al servicio de autenticación para limpiar localStorage, etc.
       await authService.logout();
@@ -132,15 +166,18 @@ export const AuthProvider = ({ children }) => {
       console.error("Error durante el logout:", error);
       // Intentar limpieza de emergencia
       authService.clearAllAuthData();
+      setUser(null);
+      setIsAuthenticated(false);
       window.location.href = '/login';
     }
   };
 
   const value = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated,
     isLoading,
     error,
+    authInitialized,
     login,
     logout,
     register,

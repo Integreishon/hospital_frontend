@@ -262,33 +262,36 @@ const appointmentService = {
   },
 
   /**
-   * FUNCIÓN MEJORADA PARA CREAR PREFERENCIA DE MERCADO PAGO
+   * Crea una preferencia de pago en Mercado Pago para una cita específica.
+   * @param {object} preferenceData - Los datos para crear la preferencia.
+   * @param {number} preferenceData.appointmentId - El ID de la cita.
+   * @param {string} preferenceData.title - El título del item para Mercado Pago.
+   * @param {number} preferenceData.price - El precio de la cita.
+   * @returns {Promise<string|null>} El ID de la preferencia de pago o null si falla.
    */
-  createMercadoPagoPreference: async (appointmentId, amount = null) => {
+  createMercadoPagoPreference: async (preferenceData) => {
     console.log('🚀 INICIANDO CREACIÓN DE PREFERENCIA MP');
-    console.log('📋 Parámetros:', { appointmentId, amount });
+    console.log('📋 Parámetros recibidos:', preferenceData);
     
+    if (!preferenceData || !preferenceData.appointmentId) {
+      console.error('❌ Error: appointmentId es requerido.');
+      throw new Error('ID de la cita no fue proporcionado.');
+      }
+      
     try {
-      // Validación de parámetros
-      if (!appointmentId) {
-        throw new Error('appointmentId es requerido');
-      }
-      
-      // Construir URL con parámetros de query
-      let url = `/payments/mercadopago/create-preference?appointmentId=${appointmentId}`;
-      if (amount !== null && amount !== undefined) {
-        url += `&amount=${amount}`;
-      }
-      
+      // Construye la URL con el appointmentId extraído del objeto.
+      const url = `/payments/mercadopago/create-preference?appointmentId=${preferenceData.appointmentId}`;
       console.log('🔗 URL completa:', url);
       
-      // Hacer la petición POST (sin body, usando query params)
-      const response = await api.post(url);
+      // El cuerpo de la petición ahora puede llevar el resto de la info si el backend lo usa
+      const response = await api.post(url, {
+        title: preferenceData.title,
+        price: preferenceData.price,
+      });
       
       console.log('📥 RESPUESTA COMPLETA del backend:', response);
       
       // La respuesta del backend ahora es consistente: { success: true, data: "preference_id", ... }
-      // El wrapper de api ya devuelve el contenido de `data` de axios.
       if (response && response.success && typeof response.data === 'string') {
         const preferenceId = response.data;
         console.log('✅ PREFERENCE ID EXTRAÍDO:', preferenceId);

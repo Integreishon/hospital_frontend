@@ -25,22 +25,33 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   useEffect(() => {
     // Función para cargar datos del paciente
     const loadPatientData = async () => {
+      // Si no hay usuario autenticado, no intentar cargar datos
+      if (!user) {
+        setPatientName('Usuario');
+        return;
+      }
+      
       if (user?.role === 'PATIENT') {
         try {
           // Si no tenemos los datos completos del paciente, intentar cargarlos
           if (!user.firstName || !user.lastName) {
             const userService = await import('../../services/userService').then(m => m.default);
-            const patientData = await userService.getCurrentPatient();
-            
-            if (patientData) {
-              // Construir nombre completo del paciente
-              if (patientData.firstName && patientData.lastName) {
-                setPatientName(`${patientData.firstName} ${patientData.lastName}`);
-              } else if (patientData.fullName) {
-                setPatientName(patientData.fullName);
-              }
+            try {
+              const patientData = await userService.getCurrentPatient();
               
-              return;
+              if (patientData) {
+                // Construir nombre completo del paciente
+                if (patientData.firstName && patientData.lastName) {
+                  setPatientName(`${patientData.firstName} ${patientData.lastName}`);
+                } else if (patientData.fullName) {
+                  setPatientName(patientData.fullName);
+                }
+                
+                return;
+              }
+            } catch (error) {
+              // Capturar error silenciosamente y continuar con datos de respaldo
+              console.debug("No se pudieron cargar datos adicionales del paciente en Sidebar");
             }
           } else {
             // Ya tenemos firstName y lastName, usar estos
@@ -48,7 +59,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             return;
           }
         } catch (error) {
-          console.error("❌ Sidebar: Error cargando datos del paciente:", error);
+          // Usar el nivel debug para errores esperados durante el inicio de sesión
+          console.debug("Info: No se pudieron cargar datos del paciente en Sidebar");
         }
       }
       

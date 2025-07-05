@@ -56,30 +56,35 @@ export const authService = {
           // Guardar DNI para posibles consultas posteriores
           userToStore.dni = dni;
           
-          console.log('🔍 Intentando obtener datos adicionales del paciente con userId:', id);
-          
-          try {
-            // Intentar obtener datos completos del paciente inmediatamente
-            const patientResponse = await api.get(`/patients/byUserId/${id}`);
-            if (patientResponse && patientResponse.data) {
-              console.log('✅ Datos del paciente obtenidos durante login:', patientResponse.data);
-              
-              // Guardar datos del paciente en el objeto de usuario
-              userToStore.patientData = patientResponse.data;
-              
-              // Actualizar firstName y lastName si están disponibles en los datos del paciente
-              if (patientResponse.data.firstName) {
-                userToStore.firstName = patientResponse.data.firstName;
+          // Solo intentar obtener datos del paciente si tenemos un ID de usuario válido
+          if (id) {
+            console.log('🔍 Intentando obtener datos adicionales del paciente con userId:', id);
+            
+            try {
+              // Intentar obtener datos completos del paciente inmediatamente
+              const patientResponse = await api.get(`/patients/byUserId/${id}`);
+              if (patientResponse && patientResponse.data) {
+                console.log('✅ Datos del paciente obtenidos durante login:', patientResponse.data);
+                
+                // Guardar datos del paciente en el objeto de usuario
+                userToStore.patientData = patientResponse.data;
+                
+                // Actualizar firstName y lastName si están disponibles en los datos del paciente
+                if (patientResponse.data.firstName) {
+                  userToStore.firstName = patientResponse.data.firstName;
+                }
+                if (patientResponse.data.lastName) {
+                  userToStore.lastName = patientResponse.data.lastName;
+                }
+                if (patientResponse.data.firstName && patientResponse.data.lastName) {
+                  userToStore.fullName = `${patientResponse.data.firstName} ${patientResponse.data.lastName}`;
+                }
               }
-              if (patientResponse.data.lastName) {
-                userToStore.lastName = patientResponse.data.lastName;
-              }
-              if (patientResponse.data.firstName && patientResponse.data.lastName) {
-                userToStore.fullName = `${patientResponse.data.firstName} ${patientResponse.data.lastName}`;
-              }
+            } catch (patientError) {
+              console.warn('⚠️ No se pudieron obtener datos del paciente durante login:', patientError);
             }
-          } catch (patientError) {
-            console.warn('⚠️ No se pudieron obtener datos del paciente durante login:', patientError);
+          } else {
+            console.warn('⚠️ No se intentó obtener datos del paciente: userId no disponible');
           }
         }
         

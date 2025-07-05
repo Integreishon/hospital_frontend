@@ -172,7 +172,6 @@ const AppointmentCard = ({ appointment, onViewDetails }) => {
   };
 
   const statusConfig = getStatusConfig(appointment.status);
-  const navigate = useNavigate();
 
   const handleViewDetails = () => {
     onViewDetails(appointment.id);
@@ -324,7 +323,7 @@ const UpcomingAppointments = () => {
   const handleViewDetails = (id) => {
     console.log(`Ver detalles de la cita ${id}`);
     // Aquí iría la navegación a la página de detalles
-    // navigate(`/appointments/${id}`);
+    navigate(`/appointments/${id}`);
   };
 
   return (
@@ -438,31 +437,43 @@ function DashboardPage() {
   useEffect(() => {
     // Función para cargar datos del paciente si es necesario
     const loadPatientData = async () => {
+      // Si no hay usuario autenticado, no intentar cargar datos
+      if (!user) {
+        setPatientName('Usuario');
+        return;
+      }
+      
       if (user?.role === 'PATIENT') {
         try {
           // Intentar obtener datos adicionales del paciente si no están ya disponibles
           if (!user.patientData && !user.firstName) {
             const userService = await import('../services/userService').then(m => m.default);
-            const patientData = await userService.getCurrentPatient();
-            
-            if (patientData) {
-              // Construir nombre completo del paciente
-              let completeName = 'Usuario';
+            try {
+              const patientData = await userService.getCurrentPatient();
               
-              if (patientData.firstName && patientData.lastName) {
-                completeName = `${patientData.firstName} ${patientData.lastName}`;
-              } else if (patientData.fullName) {
-                completeName = patientData.fullName;
-              } else if (user.nombre && user.apellidoPaterno) {
-                completeName = `${user.nombre} ${user.apellidoPaterno}`;
+              if (patientData) {
+                // Construir nombre completo del paciente
+                let completeName = 'Usuario';
+                
+                if (patientData.firstName && patientData.lastName) {
+                  completeName = `${patientData.firstName} ${patientData.lastName}`;
+                } else if (patientData.fullName) {
+                  completeName = patientData.fullName;
+                } else if (user.nombre && user.apellidoPaterno) {
+                  completeName = `${user.nombre} ${user.apellidoPaterno}`;
+                }
+                
+                setPatientName(completeName);
+                return;
               }
-              
-              setPatientName(completeName);
-              return;
+            } catch (error) {
+              // Capturar silenciosamente y continuar con los datos que tenemos
+              console.debug("Info: No se pudieron cargar datos adicionales del paciente");
             }
           }
         } catch (error) {
-          console.error("❌ Error cargando datos del paciente:", error);
+          // No mostrar error crítico, solo informativo en modo debug
+          console.debug("Info: Error al cargar datos del paciente en Dashboard");
         }
       }
       

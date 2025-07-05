@@ -20,6 +20,7 @@ import CreateAppointmentPage from './pages/CreateAppointmentPage';
 import MedicalRecordsPage from './pages/MedicalRecordsPage';
 import ProfilePage from './pages/ProfilePage';
 import PaymentStatusPage from './pages/PaymentStatusPage';
+import AppointmentDetailPage from './pages/AppointmentDetailPage';
 
 // Payment Pages
 import PaymentSuccess from './pages/payment/PaymentSuccess';
@@ -46,6 +47,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/appointments" element={<AppointmentsPage />} />
               <Route path="/appointments/new" element={<CreateAppointmentPage />} />
+              <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
               <Route path="/medical-records" element={<MedicalRecordsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>

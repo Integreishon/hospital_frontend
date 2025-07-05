@@ -7,6 +7,7 @@ const userService = {
   /**
    * Obtiene la información del paciente actualmente autenticado
    * @returns {Promise<Object>} Datos del paciente
+   * @throws {Error} Si no hay usuario autenticado o hay un error en la API
    */
   getCurrentPatient: async () => {
     try {
@@ -28,8 +29,11 @@ const userService = {
       throw new Error('La respuesta de la API no contenía datos de paciente.');
       
     } catch (error) {
-      console.error('Error al obtener los datos reales del paciente:', error);
-      // Ya no devolvemos datos falsos, propagamos el error para que sea manejado
+      // Registrar el error en consola a nivel de debug para evitar mensajes de error alarmantes
+      // durante operaciones normales (como carga inicial de componentes)
+      console.debug('Error al obtener los datos del paciente:', error);
+      
+      // Propagar el error para que se pueda manejar en los componentes
       throw error;
     }
   },
@@ -37,6 +41,7 @@ const userService = {
   /**
    * Obtiene la información completa del usuario actual, incluyendo datos de paciente si corresponde
    * @returns {Promise<Object>} Datos del usuario con perfil completo
+   * @throws {Error} Si no hay usuario autenticado o hay un error en la API
    */
   getCurrentUserProfile: async () => {
     try {
@@ -50,25 +55,30 @@ const userService = {
       
       // Si el usuario es un paciente, obtener sus datos completos
       if (user.role === 'PATIENT') {
-        const patientData = await userService.getCurrentPatient();
-        
-        // Combinar los datos de usuario con los datos de paciente
-        const enhancedUser = {
-          ...user,
-          patientData,
-          // Campos de conveniencia para facilitar acceso
-          firstName: patientData.firstName,
-          lastName: patientData.lastName,
-          fullName: patientData.fullName,
-        };
-        
-        localStorage.setItem('user', JSON.stringify(enhancedUser)); // Actualizamos el localStorage con los datos completos
-        return enhancedUser;
+        try {
+          const patientData = await userService.getCurrentPatient();
+          
+          // Combinar los datos de usuario con los datos de paciente
+          const enhancedUser = {
+            ...user,
+            patientData,
+            // Campos de conveniencia para facilitar acceso
+            firstName: patientData.firstName,
+            lastName: patientData.lastName,
+            fullName: patientData.fullName,
+          };
+          
+          localStorage.setItem('user', JSON.stringify(enhancedUser)); // Actualizamos el localStorage con los datos completos
+          return enhancedUser;
+        } catch (error) {
+          console.debug('No se pudieron obtener datos adicionales del paciente, se usarán datos básicos');
+          return user;
+        }
       }
       
       return user;
     } catch (error) {
-      console.error('Error al obtener perfil de usuario:', error);
+      console.debug('Error al obtener perfil de usuario:', error);
       throw error;
     }
   }
