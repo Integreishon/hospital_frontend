@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/features/auth/ProtectedRoute';
+import sessionPersistence from './services/sessionPersistence';
 
 // Layouts
 import MainLayout from './components/layout/MainLayout';
@@ -28,6 +29,11 @@ import PaymentFailure from './pages/payment/PaymentFailure';
 import PaymentPending from './pages/payment/PaymentPending';
 
 function App() {
+  // Inicializar el servicio de persistencia de sesión
+  useEffect(() => {
+    sessionPersistence.initSessionPersistence();
+  }, []);
+
   return (
     <AuthProvider>
       <Router>

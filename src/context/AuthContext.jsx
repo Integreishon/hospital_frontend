@@ -44,65 +44,65 @@ export const AuthProvider = ({ children }) => {
   };
   
   useEffect(() => {
-    let isMounted = true;
-    
-    const validateToken = async () => {
+    // Función para inicializar la autenticación desde localStorage
+    const initializeAuth = () => {
       const token = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
       
-      if (!token) {
-        if (isMounted) {
-          setUser(null);
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          setAuthInitialized(true);
-        }
+      if (!token || !storedUser) {
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        setAuthInitialized(true);
         return;
       }
       
       try {
-        const storedUser = JSON.parse(localStorage.getItem('user'));
-        if (storedUser && isMounted) {
-          setUser(storedUser);
-          setIsAuthenticated(true);
-        }
+        // Siempre cargar el usuario desde localStorage primero
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+        setIsLoading(false);
+        setAuthInitialized(true);
         
-        // El interceptor de API ya maneja la validación y el refresco.
-        // Aquí solo necesitamos verificar si la sesión sigue activa.
-        const response = await api.get('/auth/validate');
-        
-        if (isMounted) {
-          // La respuesta de validación puede ser tan simple como un 200 OK.
-          // La clave es que si la llamada falla (interceptada por 401), el logout se activará.
-          // Si tiene éxito, refrescamos los datos del usuario.
-          if (response && response.data && response.data.user) {
-            const userFromServer = response.data.user;
-            const fullUser = await loadFullUserData(userFromServer);
-            setUser(fullUser);
-            setIsAuthenticated(true);
-            localStorage.setItem('user', JSON.stringify(fullUser));
-          }
-          setIsLoading(false);
-          setAuthInitialized(true);
-        }
+        // Intentar actualizar los datos del usuario en segundo plano
+        // pero sin afectar la sesión actual si falla
+        updateUserData(parsedUser).catch(err => {
+          console.warn("Error al actualizar datos de usuario:", err);
+          // No hacemos nada si falla, mantenemos los datos de localStorage
+        });
       } catch (err) {
-        // El interceptor de API debería manejar los 401 y redirigir.
-        // Este catch es para otros errores de red o del servidor.
-        console.error("Error al validar la sesión:", err.message);
-        if (isMounted) {
-          // No necesariamente cerramos sesión, podría ser un error de red temporal.
-          // Mantenemos al usuario logueado con los datos de localStorage.
-          // La próxima acción que requiera API re-validará.
-          setIsLoading(false);
-          setAuthInitialized(true);
-        }
+        console.error("Error al procesar datos de usuario:", err);
+        // Incluso si hay error al procesar JSON, mantenemos la sesión
+        setIsLoading(false);
+        setAuthInitialized(true);
       }
     };
-
-    validateToken();
     
-    return () => {
-      isMounted = false;
+    // Función para actualizar datos del usuario en segundo plano
+    const updateUserData = async (currentUser) => {
+      try {
+        // Intentar obtener datos actualizados del backend
+        const response = await api.get('/auth/validate');
+        
+        if (response && response.data && response.data.user) {
+          const userFromServer = response.data.user;
+          const fullUser = await loadFullUserData(userFromServer);
+          
+          // Actualizar estado y localStorage solo si hay datos nuevos
+          setUser(fullUser);
+          localStorage.setItem('user', JSON.stringify(fullUser));
+        }
+      } catch (err) {
+        // Si hay error, simplemente lo registramos pero no cerramos sesión
+        console.warn("Error al validar token:", err.message);
+        // Mantenemos la sesión activa con los datos que ya tenemos
+      }
     };
+    
+    // Inicializar autenticación
+    initializeAuth();
+    
   }, []);
 
   const login = async (dni, password) => {

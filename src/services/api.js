@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Base API configuration for making requests to the backend
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = 'http://localhost:8080/api';
 
 // Create an instance of Axios with default config
 const api = axios.create({
@@ -111,56 +111,8 @@ api.interceptors.response.use(
     return handleResponse(response);
   },
   async (error) => {
-    const originalRequest = error.config;
-    
-    // Si es un error 401 (Unauthorized) y no es una solicitud de login o refresh
-    if (error.response && 
-        error.response.status === 401 && 
-        !originalRequest._retry && 
-        !originalRequest.url.includes('login') && 
-        !originalRequest.url.includes('refresh')) {
-      
-      // Si no estamos ya intentando refreshear el token
-      if (!isRefreshingToken) {
-        isRefreshingToken = true;
-        console.debug("Intentando refreshear el token...");
-        
-        try {
-          // Intento de refresh token (asumiendo que tienes un endpoint para eso)
-          // const refreshResponse = await api.post('/auth/refresh');
-          // const newToken = refreshResponse.data.token;
-          // localStorage.setItem('token', newToken);
-          
-          // Aquí podrías implementar el refresh token si el backend lo soporta
-          // Por ahora, simplemente vamos a limpiar la autenticación
-          console.debug("Limpiando estado de autenticación en el cliente API");
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          
-          // Procesar cola de peticiones pendientes (en este caso, rechazando todas)
-          requestsQueue.forEach(request => request.reject(error));
-          requestsQueue = [];
-          
-          // Redirigir a login
-          window.location.href = '/login';
-          
-        } catch (refreshError) {
-          console.debug("Error al refreshear el token:", refreshError);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
-        } finally {
-          isRefreshingToken = false;
-        }
-      }
-      
-      // Para la solicitud actual, la agregamos a la cola y la rechazamos
-      return new Promise((resolve, reject) => {
-        requestsQueue.push({ resolve, reject });
-      });
-    }
-    
-    // Para cualquier otro error, lo procesamos y lo rechazamos
+    // Para cualquier error, simplemente lo procesamos y lo rechazamos
+    // sin intentar manejar tokens o sesiones
     return Promise.reject(handleApiError(error));
   }
 );

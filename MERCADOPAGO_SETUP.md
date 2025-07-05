@@ -178,3 +178,73 @@ Si tienes problemas, revisa:
 2. Logs del backend
 3. Archivo `TARJETAS_PRUEBA.md` 
 4. Este README para troubleshooting
+
+# Configuración de Mercado Pago para Pruebas
+
+Este documento explica cómo configurar correctamente Mercado Pago para pruebas y solucionar errores comunes.
+
+## Configuración de Usuarios de Prueba
+
+Para probar correctamente los pagos con Mercado Pago en el entorno de sandbox, debes crear y usar usuarios de prueba específicos.
+
+### 1. Crear Usuarios de Prueba
+
+1. Inicia sesión en tu cuenta de [Mercado Pago Developers](https://developers.mercadopago.com/)
+2. Ve a la sección "Pruebas" > "Usuarios de prueba"
+3. Crea dos usuarios de prueba:
+   - Un usuario **Vendedor** (para recibir pagos)
+   - Un usuario **Comprador** (para realizar pagos)
+
+### 2. Configurar las Credenciales del Vendedor
+
+1. Inicia sesión con el usuario **Vendedor** en [Mercado Pago Developers](https://developers.mercadopago.com/)
+2. Ve a "Credenciales" y copia las credenciales de prueba (TEST):
+   - Public Key
+   - Access Token
+3. Actualiza estas credenciales en el archivo `application.properties` del backend:
+
+```properties
+mercadopago.public-key=TEST-tu-public-key
+mercadopago.access-token=TEST-tu-access-token
+```
+
+### 3. Usar el Usuario Comprador para Pagos
+
+Al realizar pagos de prueba, **debes usar el email del usuario Comprador** que creaste. Si usas otro email, recibirás el error `Invalid users involved`.
+
+## Tarjetas de Prueba
+
+Usa estas tarjetas para probar diferentes escenarios:
+
+| Tarjeta           | Número                | CVV | Fecha | Resultado |
+|-------------------|------------------------|-----|-------|-----------|
+| Mastercard        | 5031 7557 3453 0604   | 123 | 11/25 | APROBADO  |
+| Visa              | 4509 9535 6623 3704   | 123 | 11/25 | APROBADO  |
+| American Express  | 3711 803032 57522     | 1234| 11/25 | APROBADO  |
+| Mastercard        | 5031 1111 1111 1111   | 123 | 11/25 | RECHAZADO |
+| Visa              | 4444 4444 4444 0004   | 123 | 11/25 | RECHAZADO |
+
+## Solución de Problemas
+
+### Error: "Invalid users involved"
+
+Este error ocurre cuando:
+
+1. No estás usando un usuario de prueba creado correctamente
+2. El email del comprador no corresponde a un usuario de prueba
+3. Las credenciales del vendedor no están actualizadas
+
+**Solución:**
+- Verifica que estás usando el email del usuario Comprador de prueba
+- Asegúrate de que las credenciales en `application.properties` corresponden al usuario Vendedor
+- Crea nuevos usuarios de prueba si los actuales no funcionan
+
+### Error: "The following payment type(s) are not allowed at your site"
+
+Este es solo un mensaje informativo que no afecta la funcionalidad. Indica que algunos métodos de pago no están habilitados en tu cuenta de prueba.
+
+## Documentación Oficial
+
+- [Crear usuarios de prueba](https://www.mercadopago.com.ar/developers/es/docs/checkout-api/additional-content/your-integrations/test/test-users)
+- [Tarjetas de prueba](https://www.mercadopago.com.ar/developers/es/docs/checkout-api/additional-content/your-integrations/test/cards)
+- [Checkout Bricks](https://www.mercadopago.com.ar/developers/es/docs/checkout-bricks/payment-brick/introduction)

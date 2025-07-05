@@ -5,6 +5,8 @@ import { useAuth } from '../hooks/useAuth';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
+import Modal from '../components/ui/Modal';
+import MercadoPagoCheckout from '../components/features/payments/MercadoPagoCheckout';
 
 const AppointmentDetailPage = () => {
   const { id } = useParams();
@@ -12,6 +14,7 @@ const AppointmentDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user } = useAuth();
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchAppointment = async () => {
@@ -32,6 +35,24 @@ const AppointmentDetailPage = () => {
       fetchAppointment();
     }
   }, [id]);
+
+  const handlePaymentSuccess = () => {
+    // Actualizar el estado de la cita después del pago exitoso
+    setPaymentModalOpen(false);
+    // Recargar la información de la cita
+    const refreshAppointment = async () => {
+      setIsLoading(true);
+      try {
+        const data = await appointmentService.getAppointmentById(id);
+        setAppointment(data);
+      } catch (err) {
+        console.error('Error al recargar la cita:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    refreshAppointment();
+  };
 
   const getStatusInfo = (status) => {
     switch (status) {
@@ -112,6 +133,9 @@ const AppointmentDetailPage = () => {
                         <p><strong>Hora:</strong> {appointment.timeBlock}</p>
                         <p><strong>Motivo:</strong> {appointment.reason || 'No especificado'}</p>
                         <p><strong>ID de Cita:</strong> {appointment.id}</p>
+                        {appointment.price && (
+                          <p><strong>Precio:</strong> S/. {appointment.price}</p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -121,15 +145,29 @@ const AppointmentDetailPage = () => {
                     <h3 className="text-lg font-semibold text-gray-800">Esta cita requiere pago</h3>
                     <p className="text-gray-600 mt-2 mb-4">Para confirmar tu cita, por favor completa el pago.</p>
                     <Button
-                        onClick={() => alert('Redirigiendo a la pasarela de pago...')}
+                        onClick={() => setPaymentModalOpen(true)}
                         className="bg-green-500 hover:bg-green-600 text-white"
                     >
-                        Pagar S/. {appointment.price}
+                        Pagar S/. {appointment.price || 'consulta'}
                     </Button>
                 </div>
             )}
           </div>
         </Card>
+
+        {/* Modal de Pago */}
+        <Modal
+          isOpen={paymentModalOpen}
+          onClose={() => setPaymentModalOpen(false)}
+          title={`Pago de Cita - ${appointment?.specialtyName}`}
+        >
+          {appointment && (
+            <MercadoPagoCheckout
+              appointment={appointment}
+              onPaymentSuccess={handlePaymentSuccess}
+            />
+          )}
+        </Modal>
       </div>
     </div>
   );

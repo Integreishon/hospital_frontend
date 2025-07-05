@@ -119,6 +119,23 @@ export default function CreateAppointmentForm() {
       setCreatedAppointment(response.data);
       setSuccess(true);
       
+      // Asegurarnos de que createdAppointment tiene todos los campos necesarios para MercadoPagoCheckout
+      const formattedAppointment = {
+        ...response.data,
+        specialtyName: response.data.specialtyName || 'Consulta Médica',
+        // Asegurarnos de que el precio esté disponible
+        price: response.data.price || (response.data.specialty ? response.data.specialty.consultationPrice : 0),
+        // Añadir la estructura de specialty que espera MercadoPagoCheckout
+        specialty: {
+          id: response.data.specialtyId,
+          name: response.data.specialtyName || 'Consulta Médica',
+          consultationPrice: response.data.price || 0
+        }
+      };
+      
+      setCreatedAppointment(formattedAppointment);
+      setSuccess(true);
+      
     } catch (err) {
       console.log('🚨 ERROR EN EL FORMULARIO:');
       console.log('📝 Error completo:', err);
@@ -158,11 +175,21 @@ export default function CreateAppointmentForm() {
           {showPayment ? (
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">Completa tu pago</h3>
-              <MercadoPagoCheckout 
-                appointment={createdAppointment}
-                onPaymentSuccess={() => navigate('/appointments')} 
-              />
-               <Button 
+              {createdAppointment ? (
+                <MercadoPagoCheckout 
+                  appointment={createdAppointment}
+                  onPaymentSuccess={() => {
+                    // Usar navigate en lugar de recargar la página
+                    navigate('/appointments');
+                  }} 
+                />
+              ) : (
+                <div className="text-center p-4">
+                  <Spinner />
+                  <p className="text-gray-500 mt-2">Cargando información de pago...</p>
+                </div>
+              )}
+              <Button 
                 onClick={() => setShowPayment(false)}
                 variant="link"
                 className="mt-4 text-gray-600"

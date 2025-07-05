@@ -356,13 +356,49 @@ const AppointmentsPage = () => {
         <Modal
           isOpen={paymentModalOpen}
           onClose={() => setPaymentModalOpen(false)}
-          title={`Pagar Cita #${selectedAppointment.id}`}
+          title={`Pago de Cita - ${selectedAppointment.specialtyName}`}
         >
           <MercadoPagoCheckout
             appointment={selectedAppointment}
             onPaymentSuccess={() => {
               setPaymentModalOpen(false);
-              // Podríamos refrescar la lista de citas aquí
+              // Refrescar la lista de citas sin recargar la página
+              const fetchAppointments = async () => {
+                setIsLoading(true);
+                try {
+                  // Obtener citas del paciente autenticado
+                  const appointmentsFromApi = await appointmentService.getMyAppointments();
+                  
+                  // Formatear las citas para la UI
+                  const formattedAppointments = appointmentsFromApi.map(app => ({
+                    id: app.id,
+                    doctorId: app.doctorId,
+                    doctorName: app.doctorName || 'Dr. Sin Asignar',
+                    specialtyId: app.specialtyId,
+                    specialtyName: app.specialtyName || 'Especialidad Sin Asignar',
+                    appointmentDate: app.appointmentDate,
+                    timeBlock: app.timeBlock,
+                    status: app.status,
+                    reason: app.reason,
+                    paymentStatus: app.paymentStatus,
+                    createdAt: app.createdAt,
+                    price: app.price,
+                    specialty: {
+                      id: app.specialtyId,
+                      name: app.specialtyName || 'Especialidad Sin Asignar',
+                      consultationPrice: app.price
+                    }
+                  }));
+                  
+                  setAppointments(formattedAppointments);
+                } catch (err) {
+                  console.error('Error al recargar citas:', err);
+                } finally {
+                  setIsLoading(false);
+                }
+              };
+              
+              fetchAppointments();
             }}
           />
         </Modal>

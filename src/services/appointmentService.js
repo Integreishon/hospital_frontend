@@ -234,7 +234,7 @@ const appointmentService = {
    */
   getAvailableBlocks: async (doctorId, date) => {
     try {
-      const response = await api.get(`/appointments/available-blocks/${doctorId}`, { date });
+      const response = await api.get(`/appointments/available-blocks/${doctorId}`, { params: { date } });
       if (response && typeof response === 'object') {
         return response.data || response.content || response;
       }
@@ -250,7 +250,7 @@ const appointmentService = {
    */
   getAvailabilityBySpecialty: async (specialtyId, date) => {
     try {
-      const response = await api.get(`/appointments/availability/specialty/${specialtyId}`, { date });
+      const response = await api.get(`/appointments/availability/specialty/${specialtyId}`, { params: { date } });
       if (response && typeof response === 'object') {
         return response.data || response.content || response;
       }
@@ -262,28 +262,23 @@ const appointmentService = {
   },
 
   /**
-   * Crea una preferencia de pago en Mercado Pago para una cita específica.
-   * @param {object} preferenceData - Los datos para crear la preferencia.
-   * @param {number} preferenceData.appointmentId - El ID de la cita.
-   * @param {string} preferenceData.title - El título del item para Mercado Pago.
-   * @param {number} preferenceData.price - El precio de la cita.
-   * @returns {Promise<string|null>} El ID de la preferencia de pago o null si falla.
+   * Crear preferencia de pago en Mercado Pago
    */
-  createMercadoPagoPreference: async (preferenceData) => {
+  createMercadoPagoPreference: async (appointmentId, preferenceData) => {
     console.log('🚀 INICIANDO CREACIÓN DE PREFERENCIA MP');
-    console.log('📋 Parámetros recibidos:', preferenceData);
+    console.log(`📋 Parámetros recibidos: appointmentId=${appointmentId}, preferenceData=`, preferenceData);
     
-    if (!preferenceData || !preferenceData.appointmentId) {
+    if (!appointmentId) {
       console.error('❌ Error: appointmentId es requerido.');
       throw new Error('ID de la cita no fue proporcionado.');
-      }
-      
+    }
+    
     try {
-      // Construye la URL con el appointmentId extraído del objeto.
-      const url = `/payments/mercadopago/create-preference?appointmentId=${preferenceData.appointmentId}`;
+      // Construye la URL con el appointmentId.
+      const url = `/payments/mercadopago/create-preference?appointmentId=${appointmentId}`;
       console.log('🔗 URL completa:', url);
       
-      // El cuerpo de la petición ahora puede llevar el resto de la info si el backend lo usa
+      // El cuerpo de la petición lleva el title y price.
       const response = await api.post(url, {
         title: preferenceData.title,
         price: preferenceData.price,
@@ -301,20 +296,42 @@ const appointmentService = {
         console.error('📊 Response recibido:', response);
         throw new Error('No se recibió un ID de preferencia válido del servidor');
       }
-      
     } catch (error) {
-      console.error('❌ ERROR EN createMercadoPagoPreference:', error);
-      console.error('📝 Mensaje:', error.message);
-      console.error('🔢 Status:', error.status);
-      console.error('📄 Response:', error.response);
+      console.error('❌ ERROR AL CREAR PREFERENCIA:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Procesar el pago con Mercado Pago (Brick)
+   */
+  processPayment: async (paymentData, appointmentId) => {
+    console.log('🚀 INICIANDO PROCESAMIENTO DE PAGO');
+    console.log('📋 Datos de pago a enviar:', paymentData);
+    console.log(`🆔 ID de la cita: ${appointmentId}`);
+
+    if (!appointmentId) {
+      console.error('❌ Error: El ID de la cita es requerido para procesar el pago.');
+      throw new Error('El ID de la cita no fue proporcionado.');
+    }
+
+    const payload = {
+      ...paymentData,
+      appointmentId: appointmentId,
+    };
+
+    try {
+      const response = await api.post('/payments/mercadopago/process-payment', payload);
       
-      // Re-lanzar el error con información adicional
-      const enhancedError = new Error(error.message || 'Error al crear preferencia de Mercado Pago');
-      enhancedError.originalError = error;
-      enhancedError.status = error.status;
-      enhancedError.response = error.response;
-      
-      throw enhancedError;
+      console.log('✅ RESPUESTA DEL PROCESAMIENTO DE PAGO:', response);
+
+      if (response && typeof response === 'object') {
+        return response.data || response;
+      }
+      return response;
+    } catch (error) {
+      console.error('❌ ERROR AL PROCESAR EL PAGO:', error);
+      throw error;
     }
   },
 

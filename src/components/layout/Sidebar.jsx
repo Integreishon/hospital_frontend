@@ -132,25 +132,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       submenu: [
         { title: 'Mis Citas', path: '/appointments' },
         { title: 'Agendar Cita', path: '/appointments/new' },
-        { title: 'Historial', path: '/appointments/history' }
+        { title: 'Historial', path: '/medical-records' }
       ]
     },
    
-    {
-      id: 'payment',
-      title: 'Pagos',
-      icon: (
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-      ),
-      hasSubmenu: true,
-      submenu: [
-        { title: 'Mis Pagos', path: '/payment/history' },
-        { title: 'Realizar Pago', path: '/payment/new' },
-        { title: 'Facturación', path: '/payment/invoices' }
-      ]
-    },
+  
     {
       id: 'user',
       title: 'Mi Cuenta',
@@ -161,9 +147,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       ),
       hasSubmenu: true,
       submenu: [
-        { title: 'Mi Perfil', path: '/profile' },
-        { title: 'Configuración', path: '/user/settings' },
-        { title: 'Notificaciones', path: '/user/notifications' }
+        { title: 'Mi Perfil', path: '/profile' }
       ]
     }
   ];
